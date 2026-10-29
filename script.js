@@ -1,5 +1,5 @@
 // =========================================
-// DayFlow – Funktionen (Schritt 2)
+// DayFlow – Funktionen (Schritt 3)
 // =========================================
 
 // ---------- 1. Datum und Begrüßung ----------
@@ -59,7 +59,7 @@ navButtons.forEach(function (button) {
 // ---------- 3. Aufgaben (NEU in Schritt 2) ----------
 
 // Hier merken wir uns alle Aufgaben. Jede Aufgabe ist ein Objekt.
-// Achtung: Noch gehen sie beim Neuladen verloren (Speichern folgt in Schritt 3).
+// Achtung: Noch gehen sie beim Neuladen verloren (Speichern folgt später).
 let aufgaben = [];
 
 // Texte für die Anzeige der Prioritäten
@@ -185,7 +185,92 @@ formular.addEventListener("submit", function (ereignis) {
   formular.reset();
 });
 
-// ---------- 4. Start ----------
+// ---------- 4. Spracheingabe (NEU in Schritt 3) ----------
+
+// Safari nennt die Spracherkennung "webkitSpeechRecognition",
+// andere Browser "SpeechRecognition". Wir nehmen, was vorhanden ist.
+const Spracherkennung = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+const mikroButton = document.getElementById("mikro-button");
+const mikroStatus = document.getElementById("mikro-status");
+
+let erkennung = null; // die laufende Spracherkennung
+let hoertZu = false;  // true, solange das Mikrofon an ist
+
+// Übersetzt die Fehler-Codes der Spracherkennung in verständliche Sätze.
+function spracheFehlerText(code) {
+  if (code === "not-allowed" || code === "service-not-allowed") {
+    return "Ich darf das Mikrofon nicht benutzen. Erlaube den Zugriff in Safari und prüfe, ob die Diktierfunktion in den iPad-Einstellungen eingeschaltet ist.";
+  }
+  if (code === "no-speech") {
+    return "Ich habe nichts gehört. Tippe noch einmal auf das Mikrofon und sprich etwas lauter.";
+  }
+  if (code === "audio-capture") {
+    return "Es wurde kein Mikrofon gefunden.";
+  }
+  if (code === "network") {
+    return "Für die Spracheingabe wird eine Internetverbindung benötigt.";
+  }
+  return "Die Spracheingabe hat nicht geklappt (" + code + "). Bitte versuch es noch einmal.";
+}
+
+function setzeHoertZu(wert) {
+  hoertZu = wert;
+  mikroButton.classList.toggle("hoert-zu", wert);
+  mikroStatus.hidden = !wert;
+  mikroStatus.textContent = wert ? "Ich höre zu … sprich jetzt deine Aufgabe." : "";
+}
+
+function starteSpracheingabe() {
+  // Gibt es überhaupt eine Spracherkennung in diesem Browser?
+  if (!Spracherkennung) {
+    zeigeFehler("Dein Browser unterstützt leider keine Spracheingabe. Tipp: Tippe ins Titelfeld und nutze die Mikrofon-Taste der iPad-Tastatur.");
+    return;
+  }
+
+  // Zweiter Tipp auf den Button: Zuhören beenden
+  if (hoertZu) {
+    erkennung.stop();
+    return;
+  }
+
+  versteckeFehler();
+
+  erkennung = new Spracherkennung();
+  erkennung.lang = "de-DE";         // Deutsch verstehen
+  erkennung.interimResults = true;  // Text schon während des Sprechens zeigen
+
+  // Wird aufgerufen, sobald (neuer) Text erkannt wurde
+  erkennung.onresult = function (ereignis) {
+    let text = "";
+    for (let i = 0; i < ereignis.results.length; i++) {
+      text += ereignis.results[i][0].transcript;
+    }
+    titelFeld.value = text.trim().slice(0, 100); // höchstens 100 Zeichen
+  };
+
+  erkennung.onerror = function (ereignis) {
+    if (ereignis.error !== "aborted") {
+      zeigeFehler(spracheFehlerText(ereignis.error));
+    }
+  };
+
+  // Wird immer am Ende aufgerufen – egal ob mit Erfolg oder Fehler
+  erkennung.onend = function () {
+    setzeHoertZu(false);
+  };
+
+  try {
+    erkennung.start();
+    setzeHoertZu(true);
+  } catch (fehler) {
+    zeigeFehler("Die Spracheingabe konnte nicht gestartet werden. Bitte versuch es noch einmal.");
+  }
+}
+
+mikroButton.addEventListener("click", starteSpracheingabe);
+
+// ---------- 5. Start ----------
 
 zeigeDatumUndBegruessung();
 zeigeAufgaben();

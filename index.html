@@ -44,7 +44,18 @@
           <h2>Neue Aufgabe</h2>
 
           <label for="aufgabe-titel">Titel</label>
-          <input type="text" id="aufgabe-titel" maxlength="100" placeholder="z. B. Wocheneinkauf erledigen">
+          <!-- NEU in Schritt 3: Titelfeld mit Mikrofon-Button daneben -->
+          <div class="titel-zeile">
+            <input type="text" id="aufgabe-titel" maxlength="100" placeholder="z. B. Wocheneinkauf erledigen">
+            <button type="button" class="mikro-button" id="mikro-button" aria-label="Aufgabe einsprechen" title="Aufgabe einsprechen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                <path d="M5 11a7 7 0 0 0 14 0"></path>
+                <line x1="12" y1="18" x2="12" y2="21"></line>
+              </svg>
+            </button>
+          </div>
+          <p class="mikro-status" id="mikro-status" hidden></p>
 
           <label for="aufgabe-beschreibung">Beschreibung <span class="optional">(optional)</span></label>
           <textarea id="aufgabe-beschreibung" rows="2" maxlength="500" placeholder="Details, Notizen, Links …"></textarea>

@@ -340,3 +340,57 @@ body {
     gap: 0;
   }
 }
+
+/* =========================================
+   NEU in Schritt 3: Spracheingabe
+   ========================================= */
+
+/* 9. Titelfeld und Mikrofon-Button nebeneinander */
+.titel-zeile {
+  display: flex;
+  gap: 8px;
+}
+
+.titel-zeile input {
+  flex: 1;
+  min-width: 0;
+}
+
+.mikro-button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--karte-rand);
+  border-radius: 10px;
+  background: var(--hintergrund);
+  color: var(--akzent);
+  cursor: pointer;
+}
+
+.mikro-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Während zugehört wird: rot und pulsierend */
+.mikro-button.hoert-zu {
+  background: var(--hoch);
+  border-color: var(--hoch);
+  color: #0f1115;
+  animation: pulsieren 1.2s ease-in-out infinite;
+}
+
+@keyframes pulsieren {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 122, 122, 0.5); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 122, 122, 0); }
+}
+
+.mikro-status {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--akzent);
+}
