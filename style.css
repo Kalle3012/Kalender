@@ -1,0 +1,169 @@
+/* =========================================
+   DayFlow – Design
+   ========================================= */
+
+/* 1. Farben und Abstände als Variablen.
+      So können wir das Design später an einer Stelle ändern. */
+:root {
+  --hintergrund: #0f1115;
+  --karte: #181b22;
+  --karte-rand: #262a34;
+  --text: #e8eaf0;
+  --text-leise: #9aa0ad;
+  --akzent: #7c9cff;
+  --radius: 16px;
+  --abstand: 20px;
+}
+
+/* 2. Grundeinstellungen für die ganze Seite */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--hintergrund);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--abstand);
+}
+
+/* 3. Kopfbereich mit Logo und Navigation */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.logo-punkt {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--akzent);
+}
+
+.navigation {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--karte);
+  border: 1px solid var(--karte-rand);
+  border-radius: 999px;
+}
+
+.nav-button {
+  border: none;
+  background: transparent;
+  color: var(--text-leise);
+  font: inherit;
+  font-size: 15px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.nav-button:hover {
+  color: var(--text);
+}
+
+.nav-button.aktiv {
+  background: var(--akzent);
+  color: #0f1115;
+  font-weight: 600;
+}
+
+/* 4. Karten */
+.karte {
+  background: var(--karte);
+  border: 1px solid var(--karte-rand);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+
+.begruessung-karte h1 {
+  margin: 4px 0 8px;
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+.datum {
+  margin: 0;
+  color: var(--akzent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 13px;
+}
+
+.untertitel {
+  margin: 0;
+  color: var(--text-leise);
+}
+
+/* 5. Leere Zustände (wenn noch nichts vorhanden ist) */
+.leer-zustand {
+  text-align: center;
+  padding: 48px 28px;
+}
+
+.leer-zustand h2 {
+  margin-top: 0;
+}
+
+.leer-zustand p {
+  color: var(--text-leise);
+  margin: 4px 0;
+}
+
+.hinweis {
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* 6. Anpassungen für kleine Bildschirme (Smartphone) */
+@media (max-width: 600px) {
+  :root {
+    --abstand: 16px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .navigation {
+    justify-content: space-between;
+  }
+
+  .nav-button {
+    flex: 1;
+    padding: 10px 8px;
+  }
+
+  .karte {
+    padding: 22px;
+  }
+
+  .begruessung-karte h1 {
+    font-size: 28px;
+  }
+}

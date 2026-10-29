@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DayFlow – mein Alltagsplaner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== AB HIER für CodePen kopieren ===== -->
+  <div class="app">
+
+    <!-- Kopfbereich: Logo und Navigation -->
+    <header class="topbar">
+      <div class="logo">
+        <span class="logo-punkt"></span>
+        DayFlow
+      </div>
+
+      <nav class="navigation">
+        <button class="nav-button aktiv" data-ansicht="dashboard">Übersicht</button>
+        <button class="nav-button" data-ansicht="aufgaben">Aufgaben</button>
+        <button class="nav-button" data-ansicht="notizen">Notizen</button>
+      </nav>
+    </header>
+
+    <main>
+
+      <!-- Ansicht 1: Dashboard -->
+      <section class="ansicht" id="ansicht-dashboard">
+        <div class="karte begruessung-karte">
+          <p class="datum" id="datum">Datum wird geladen …</p>
+          <h1 id="begruessung">Hallo!</h1>
+          <p class="untertitel">Schön, dass du da bist. Hier entsteht dein persönlicher Tagesüberblick.</p>
+        </div>
+      </section>
+
+      <!-- Ansicht 2: Aufgaben (wird in Schritt 2 gebaut) -->
+      <section class="ansicht" id="ansicht-aufgaben" hidden>
+        <div class="karte leer-zustand">
+          <h2>Aufgaben</h2>
+          <p>Hier kannst du bald deine Aufgaben verwalten.</p>
+          <p class="hinweis">Diesen Bereich bauen wir im nächsten Schritt.</p>
+        </div>
+      </section>
+
+      <!-- Ansicht 3: Notizen (wird später gebaut) -->
+      <section class="ansicht" id="ansicht-notizen" hidden>
+        <div class="karte leer-zustand">
+          <h2>Notizen</h2>
+          <p>Hier kannst du bald kurze Gedanken und Ideen festhalten.</p>
+          <p class="hinweis">Diesen Bereich bauen wir in einem späteren Schritt.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <!-- ===== BIS HIER für CodePen kopieren ===== -->
+
+  <script src="script.js"></script>
+</body>
+</html>
