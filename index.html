@@ -34,6 +34,34 @@
           <h1 id="begruessung">Hallo!</h1>
           <p class="untertitel">Schön, dass du da bist. Hier entsteht dein persönlicher Tagesüberblick.</p>
         </div>
+
+        <!-- NEU in Schritt 4: Sprechen und direkt eintragen -->
+        <div class="karte sprach-karte">
+          <h2>Was steht an?</h2>
+          <p class="untertitel">Tippe auf das Mikrofon und sag zum Beispiel:<br>„Morgen um 10 Uhr Zahnarzt, wichtig“</p>
+
+          <button type="button" class="sprach-button" id="sprach-button" aria-label="Aufgabe oder Termin einsprechen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+              <path d="M5 11a7 7 0 0 0 14 0"></path>
+              <line x1="12" y1="18" x2="12" y2="21"></line>
+            </svg>
+          </button>
+
+          <p class="sprach-status" id="sprach-status">Tippen zum Sprechen</p>
+          <p class="sprach-text" id="sprach-text" hidden></p>
+          <p class="fehler" id="sprach-fehler" hidden></p>
+
+          <!-- Bestätigung nach dem Eintragen -->
+          <div class="bestaetigung" id="bestaetigung" hidden>
+            <p class="bestaetigung-titel">✓ Eingetragen</p>
+            <ul class="bestaetigung-details" id="bestaetigung-details"></ul>
+            <div class="bestaetigung-aktionen">
+              <button type="button" class="text-button" id="rueckgaengig-button">Rückgängig</button>
+              <button type="button" class="text-button" id="zu-aufgaben-button">Zu den Aufgaben</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- Ansicht 2: Aufgaben (NEU in Schritt 2) -->
@@ -64,6 +92,11 @@
             <div>
               <label for="aufgabe-faellig">Fällig am</label>
               <input type="date" id="aufgabe-faellig">
+            </div>
+            <!-- NEU in Schritt 4: Uhrzeit für Termine -->
+            <div>
+              <label for="aufgabe-uhrzeit">Uhrzeit <span class="optional">(optional)</span></label>
+              <input type="time" id="aufgabe-uhrzeit">
             </div>
             <div>
               <label for="aufgabe-prioritaet">Priorität</label>

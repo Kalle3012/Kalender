@@ -231,10 +231,10 @@ body {
   text-align: left;
 }
 
-/* Fälligkeit und Priorität nebeneinander */
+/* Fälligkeit, Uhrzeit und Priorität nebeneinander */
 .formular-zeile {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
 }
 
@@ -333,14 +333,6 @@ body {
 .etikett.prio-mittel  { color: var(--mittel); }
 .etikett.prio-niedrig { color: var(--niedrig); }
 
-/* Auf sehr schmalen Handys: Datum und Priorität untereinander */
-@media (max-width: 380px) {
-  .formular-zeile {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-}
-
 /* =========================================
    NEU in Schritt 3: Spracheingabe
    ========================================= */
@@ -393,4 +385,139 @@ body {
   margin: 8px 0 0;
   font-size: 14px;
   color: var(--akzent);
+}
+
+/* =========================================
+   NEU in Schritt 4: Sprechen auf der Startseite
+   ========================================= */
+
+/* 10. Sprach-Karte */
+#ansicht-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* "hidden" muss stärker sein als "display: flex" oben */
+#ansicht-dashboard[hidden] {
+  display: none;
+}
+
+.sprach-karte {
+  text-align: center;
+}
+
+.sprach-karte h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.sprach-button {
+  width: 88px;
+  height: 88px;
+  margin: 24px auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--akzent);
+  color: #0f1115;
+  cursor: pointer;
+}
+
+.sprach-button svg {
+  width: 36px;
+  height: 36px;
+}
+
+.sprach-button:active {
+  transform: scale(0.97);
+}
+
+/* Während zugehört wird: rot und pulsierend (wie der kleine Button) */
+.sprach-button.hoert-zu {
+  background: var(--hoch);
+  animation: pulsieren 1.2s ease-in-out infinite;
+}
+
+.sprach-status {
+  margin: 0;
+  color: var(--text-leise);
+  font-size: 15px;
+}
+
+.sprach-text {
+  margin: 12px 0 0;
+  font-size: 17px;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.sprach-karte .fehler {
+  text-align: left;
+}
+
+/* Bestätigung nach dem Eintragen */
+.bestaetigung {
+  margin-top: 16px;
+  padding: 14px 16px;
+  text-align: left;
+  background: rgba(111, 211, 160, 0.08);
+  border: 1px solid rgba(111, 211, 160, 0.35);
+  border-radius: 12px;
+}
+
+.bestaetigung-titel {
+  margin: 0 0 6px;
+  color: var(--niedrig);
+  font-weight: 600;
+}
+
+.bestaetigung-details {
+  margin: 0;
+  padding-left: 18px;
+  overflow-wrap: anywhere;
+}
+
+.bestaetigung-details .leise {
+  color: var(--text-leise);
+}
+
+.bestaetigung-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.text-button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--karte-rand);
+  border-radius: 10px;
+  background: var(--hintergrund);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* Formular auf Handy/kleinem Tablet: zwei Spalten, Priorität darunter */
+@media (max-width: 600px) {
+  .formular-zeile {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formular-zeile > div:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Auf sehr schmalen Handys: alle Felder untereinander */
+@media (max-width: 380px) {
+  .formular-zeile {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
