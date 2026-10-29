@@ -36,13 +36,49 @@
         </div>
       </section>
 
-      <!-- Ansicht 2: Aufgaben (wird in Schritt 2 gebaut) -->
+      <!-- Ansicht 2: Aufgaben (NEU in Schritt 2) -->
       <section class="ansicht" id="ansicht-aufgaben" hidden>
-        <div class="karte leer-zustand">
-          <h2>Aufgaben</h2>
-          <p>Hier kannst du bald deine Aufgaben verwalten.</p>
-          <p class="hinweis">Diesen Bereich bauen wir im nächsten Schritt.</p>
+
+        <!-- Formular für eine neue Aufgabe -->
+        <form class="karte formular" id="aufgabe-formular" novalidate>
+          <h2>Neue Aufgabe</h2>
+
+          <label for="aufgabe-titel">Titel</label>
+          <input type="text" id="aufgabe-titel" maxlength="100" placeholder="z. B. Wocheneinkauf erledigen">
+
+          <label for="aufgabe-beschreibung">Beschreibung <span class="optional">(optional)</span></label>
+          <textarea id="aufgabe-beschreibung" rows="2" maxlength="500" placeholder="Details, Notizen, Links …"></textarea>
+
+          <div class="formular-zeile">
+            <div>
+              <label for="aufgabe-faellig">Fällig am</label>
+              <input type="date" id="aufgabe-faellig">
+            </div>
+            <div>
+              <label for="aufgabe-prioritaet">Priorität</label>
+              <select id="aufgabe-prioritaet">
+                <option value="niedrig">Niedrig</option>
+                <option value="mittel" selected>Mittel</option>
+                <option value="hoch">Hoch</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Hier erscheinen Fehlermeldungen -->
+          <p class="fehler" id="aufgabe-fehler" hidden></p>
+
+          <button type="submit" class="haupt-button">Aufgabe hinzufügen</button>
+        </form>
+
+        <!-- Liste aller Aufgaben -->
+        <h2 class="abschnitt-titel">Deine Aufgaben <span id="aufgaben-anzahl"></span></h2>
+
+        <div class="karte leer-zustand" id="aufgaben-leer">
+          <p><strong>Noch keine Aufgaben.</strong></p>
+          <p>Leg oben deine erste Aufgabe an.</p>
         </div>
+
+        <ul class="aufgaben-liste" id="aufgaben-liste"></ul>
       </section>
 
       <!-- Ansicht 3: Notizen (wird später gebaut) -->
