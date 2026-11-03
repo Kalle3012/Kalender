@@ -5,14 +5,17 @@
 /* 1. Farben und Abstände als Variablen.
       So können wir das Design später an einer Stelle ändern. */
 :root {
-  --hintergrund: #0f1115;
-  --karte: #181b22;
-  --karte-rand: #262a34;
-  --text: #e8eaf0;
-  --text-leise: #9aa0ad;
+  --hintergrund: #0c0e12;
+  --karte: #15181f;
+  --karte-hell: #1a1e26;          /* NEU in Schritt 8: obere Farbe des Karten-Verlaufs */
+  --karte-rand: #252a35;
+  --text: #eef0f5;
+  --text-leise: #9aa1b0;
   --akzent: #7c9cff;
-  --radius: 16px;
+  --akzent-2: #a78bfa;            /* NEU in Schritt 8: Violett für Farbverläufe */
+  --radius: 20px;
   --abstand: 20px;
+  --schatten: 0 12px 32px rgba(0, 0, 0, 0.35);
 
   /* NEU in Schritt 2: Farben für Prioritäten und Fehler */
   --hoch: #ff7a7a;
@@ -31,27 +34,49 @@
 
 body {
   margin: 0;
-  background: var(--hintergrund);
+  min-height: 100vh;
+  /* NEU in Schritt 8: ein ganz leichter blauer Schimmer oben links */
+  background:
+    radial-gradient(900px 500px at 0% -10%, rgba(124, 156, 255, 0.09), transparent 60%),
+    var(--hintergrund);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Abstände am Rand – "env(safe-area-inset-…)" hält Abstand zu Notch und Home-Leiste */
 .app {
-  max-width: 900px;
+  --rand-links: max(var(--abstand), env(safe-area-inset-left));
+  --rand-rechts: max(var(--abstand), env(safe-area-inset-right));
+  max-width: 1200px;
   margin: 0 auto;
-  padding: var(--abstand);
+  padding: 0 var(--rand-rechts) calc(var(--abstand) + env(safe-area-inset-bottom)) var(--rand-links);
+}
+
+/* Zahlen gleich breit – so stehen Quoten und Zähler sauber untereinander */
+.zahl,
+.quote-wert,
+.value-abzeichen {
+  font-variant-numeric: tabular-nums;
 }
 
 /* 3. Kopfbereich mit Logo und Navigation */
+/* NEU in Schritt 8: bleibt beim Scrollen oben ("sticky") und ist leicht durchsichtig */
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 28px;
+  margin: 0 calc(-1 * var(--rand-rechts)) 20px calc(-1 * var(--rand-links));
+  padding: calc(12px + env(safe-area-inset-top)) var(--rand-rechts) 12px var(--rand-links);
+  background: rgba(12, 14, 18, 0.72);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
 }
 
 .logo {
@@ -60,14 +85,13 @@ body {
   gap: 10px;
   font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.01em;
 }
 
-.logo-punkt {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--akzent);
+.logo-symbol {
+  width: 28px;
+  height: 28px;
+  color: var(--akzent);
 }
 
 .navigation {
@@ -80,38 +104,66 @@ body {
 }
 
 .nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
   background: transparent;
   color: var(--text-leise);
   font: inherit;
   font-size: 15px;
-  padding: 8px 16px;
+  padding: 8px 16px 8px 12px;
   border-radius: 999px;
   cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-.nav-button:hover {
-  color: var(--text);
+.nav-button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .nav-button.aktiv {
   background: var(--akzent);
-  color: #0f1115;
+  color: #0c0e12;
   font-weight: 600;
 }
 
 /* 4. Karten */
+/* NEU in Schritt 8: leichter Verlauf, Schatten und sanftes Einblenden */
 .karte {
-  background: var(--karte);
+  background: linear-gradient(180deg, var(--karte-hell), var(--karte));
   border: 1px solid var(--karte-rand);
   border-radius: var(--radius);
-  padding: 28px;
+  padding: 26px;
+  box-shadow: var(--schatten);
+  animation: einblenden 0.35s ease both;
+}
+
+@keyframes einblenden {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Begrüßung mit blauem Schimmer in der Ecke */
+.begruessung-karte {
+  background:
+    radial-gradient(480px 220px at 100% 0%, rgba(124, 156, 255, 0.18), transparent 70%),
+    linear-gradient(180deg, var(--karte-hell), var(--karte));
 }
 
 .begruessung-karte h1 {
   margin: 4px 0 8px;
-  font-size: 34px;
-  line-height: 1.2;
+  font-size: 36px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 .datum {
@@ -154,18 +206,49 @@ body {
     --abstand: 16px;
   }
 
+  /* Oben nur noch das Logo – ohne Unschärfe-Effekt, denn der würde
+     die feste Navigation unten "einsperren" */
   .topbar {
-    flex-direction: column;
-    align-items: stretch;
+    position: static;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    margin-bottom: 8px;
   }
 
+  /* NEU in Schritt 8: Navigation als schwebende Leiste unten – gut mit dem Daumen erreichbar */
   .navigation {
-    justify-content: space-between;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 30;
+    padding: 6px;
+    border-radius: 24px;
+    background: rgba(21, 24, 31, 0.86);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   }
 
   .nav-button {
     flex: 1;
-    padding: 10px 8px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 4px;
+    border-radius: 18px;
+    font-size: 12px;
+  }
+
+  .nav-button svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Platz lassen, damit die Leiste nichts verdeckt */
+  .app {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
   }
 
   .karte {
@@ -173,7 +256,7 @@ body {
   }
 
   .begruessung-karte h1 {
-    font-size: 28px;
+    font-size: 30px;
   }
 }
 
@@ -221,9 +304,11 @@ body {
 
 .formular input:focus,
 .formular textarea:focus,
-.formular select:focus {
+.formular select:focus,
+.schluessel-zeile input:focus {
   outline: none;
   border-color: var(--akzent);
+  box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.25);
 }
 
 /* Datum linksbündig anzeigen (Safari zentriert es sonst) */
@@ -251,14 +336,15 @@ body {
 .haupt-button {
   width: 100%;
   margin-top: 20px;
-  min-height: 46px;
+  min-height: 48px;
   border: none;
-  border-radius: 10px;
-  background: var(--akzent);
-  color: #0f1115;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--akzent), var(--akzent-2));
+  color: #0c0e12;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 8px 20px rgba(124, 156, 255, 0.25);
 }
 
 .haupt-button:active {
@@ -407,7 +493,17 @@ body {
 }
 
 .sprach-karte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+}
+
+/* Fehler und Bestätigung trotzdem über die volle Breite */
+.sprach-karte .fehler,
+.sprach-karte .bestaetigung {
+  align-self: stretch;
 }
 
 .sprach-karte h2 {
@@ -416,17 +512,19 @@ body {
 }
 
 .sprach-button {
-  width: 88px;
-  height: 88px;
+  width: 92px;
+  height: 92px;
   margin: 24px auto 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 50%;
-  background: var(--akzent);
-  color: #0f1115;
+  background: linear-gradient(135deg, var(--akzent), var(--akzent-2));
+  color: #0c0e12;
   cursor: pointer;
+  box-shadow: 0 12px 32px rgba(124, 156, 255, 0.4);
+  transition: transform 0.15s;
 }
 
 .sprach-button svg {
@@ -440,7 +538,7 @@ body {
 
 /* Während zugehört wird: rot und pulsierend (wie der kleine Button) */
 .sprach-button.hoert-zu {
-  background: var(--hoch);
+  background: linear-gradient(135deg, var(--hoch), #ff9f7a);
   animation: pulsieren 1.2s ease-in-out infinite;
 }
 
@@ -498,12 +596,13 @@ body {
   min-height: 40px;
   padding: 8px 14px;
   border: 1px solid var(--karte-rand);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--hintergrund);
   color: var(--text);
   font: inherit;
   font-size: 15px;
   cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 /* Formular auf Handy/kleinem Tablet: zwei Spalten, Priorität darunter */
@@ -531,7 +630,7 @@ body {
 
 /* 11. Fortschritt und Zahlen auf der Startseite */
 .fortschritt {
-  height: 8px;
+  height: 10px;
   margin-top: 14px;
   background: var(--hintergrund);
   border-radius: 999px;
@@ -541,7 +640,7 @@ body {
 .fortschritt-balken {
   width: 0;
   height: 100%;
-  background: var(--niedrig);
+  background: linear-gradient(90deg, var(--niedrig), #5fd0d6);
   border-radius: 999px;
   transition: width 0.4s ease;
 }
@@ -554,17 +653,27 @@ body {
 }
 
 .zahl-kachel {
-  padding: 10px 12px;
-  background: var(--hintergrund);
+  padding: 12px 14px;
+  background: rgba(12, 14, 18, 0.6);
   border: 1px solid var(--karte-rand);
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 .zahl {
   display: block;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* NEU in Schritt 8: jede Zahl mit eigener Farbe */
+.zahl-kachel:nth-child(1) .zahl {
+  color: var(--akzent);
+}
+
+.zahl-kachel:nth-child(2) .zahl {
+  color: var(--niedrig);
 }
 
 .zahl-name {
@@ -581,14 +690,16 @@ body {
 .karten-titel {
   margin: 0 0 12px;
   font-size: 20px;
+  letter-spacing: -0.01em;
 }
 
 .naechster-termin {
   margin: 0 0 14px;
   padding: 10px 14px;
   background: rgba(124, 156, 255, 0.1);
-  border: 1px solid rgba(124, 156, 255, 0.35);
-  border-radius: 10px;
+  border: 1px solid rgba(124, 156, 255, 0.3);
+  border-left: 4px solid var(--akzent);
+  border-radius: 12px;
   overflow-wrap: anywhere;
 }
 
@@ -901,7 +1012,7 @@ body {
   padding: 4px 0;
   background: var(--karte);
   border: 1px solid var(--karte-rand);
-  border-radius: 8px;
+  border-radius: 10px;
   line-height: 1.25;
 }
 
@@ -986,5 +1097,124 @@ body {
 
   .quoten {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* =========================================
+   NEU in Schritt 8: Design-Feinschliff
+   ========================================= */
+
+/* 19. Rückmeldung beim Antippen – Hover nur bei Geräten mit Maus */
+@media (hover: hover) {
+  .nav-button:not(.aktiv):hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .text-button:hover {
+    border-color: var(--akzent);
+  }
+
+  .sprach-button:hover {
+    transform: scale(1.04);
+  }
+}
+
+.text-button:active,
+.haupt-button:active,
+.nav-button:active {
+  transform: scale(0.97);
+}
+
+/* Sichtbarer Rahmen, wenn man mit der Tastatur navigiert */
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--akzent);
+  outline-offset: 2px;
+}
+
+/* 20. Breite Bildschirme (z. B. iPad quer): zwei Spalten */
+@media (min-width: 1000px) {
+  /* Startseite: oben Begrüßung und Mikrofon, darunter "Dein Tag" und Fußball */
+  #ansicht-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "gruss sprache"
+      "tag   fussball";
+    gap: 20px;
+    align-items: start;
+  }
+
+  .begruessung-karte {
+    grid-area: gruss;
+    align-self: stretch;
+  }
+
+  .sprach-karte {
+    grid-area: sprache;
+    align-self: stretch;
+  }
+
+  .tag-karte {
+    grid-area: tag;
+  }
+
+  .fussball-karte {
+    grid-area: fussball;
+  }
+
+  /* Aufgaben: Formular links (bleibt beim Scrollen stehen), Liste rechts */
+  #ansicht-aufgaben {
+    display: grid;
+    grid-template-columns: minmax(340px, 420px) 1fr;
+    column-gap: 24px;
+    align-items: start;
+  }
+
+  #ansicht-aufgaben[hidden] {
+    display: none;
+  }
+
+  #aufgabe-formular {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    position: sticky;
+    top: 88px;
+  }
+
+  #ansicht-aufgaben > :not(form) {
+    grid-column: 2;
+  }
+
+  #ansicht-aufgaben .abschnitt-titel {
+    margin-top: 0;
+  }
+
+  /* Im schmaleren Formular: Datum und Uhrzeit nebeneinander, Priorität darunter */
+  .formular-zeile {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formular-zeile > div:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Auf dem Handy: Meldungs-Leiste über der Navigation unten */
+@media (max-width: 600px) {
+  .meldung {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+}
+
+/* 21. Wer in den Einstellungen "Bewegung reduzieren" eingeschaltet hat,
+       bekommt keine Animationen */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

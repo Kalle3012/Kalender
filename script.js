@@ -1,5 +1,5 @@
 // =========================================
-// DayFlow – Funktionen (Schritt 6)
+// DayFlow – Funktionen (Schritt 8)
 // =========================================
 
 // ---------- 1. Datum und Begrüßung ----------
@@ -47,6 +47,8 @@ function wechsleAnsicht(name) {
   navButtons.forEach(function (button) {
     button.classList.toggle("aktiv", button.dataset.ansicht === name);
   });
+
+  window.scrollTo(0, 0); // NEU in Schritt 8: neue Ansicht beginnt immer oben
 }
 
 // Jeder Navigations-Button bekommt einen "Klick-Zuhörer".
