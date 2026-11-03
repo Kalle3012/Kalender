@@ -89,6 +89,61 @@
           <p class="leer-text" id="heute-leer">Für heute ist nichts eingetragen.</p>
           <ul class="aufgaben-liste" id="heute-liste"></ul>
         </div>
+
+        <!-- NEU in Schritt 6: Fußball-Spiele mit Quoten -->
+        <div class="karte">
+          <div class="karten-kopf">
+            <h2 class="karten-titel">⚽ Fußball</h2>
+            <button type="button" class="text-button" id="quoten-aktualisieren" hidden>Aktualisieren</button>
+          </div>
+          <p class="leer-text" id="fussball-stand" hidden></p>
+
+          <!-- Einrichtung: API-Schlüssel eingeben -->
+          <div class="fussball-einrichtung" id="fussball-einrichtung" hidden>
+            <p>Die Quoten kommen vom kostenlosen Dienst <strong>The Odds API</strong> (500 Abrufe pro Monat). So richtest du ihn ein:</p>
+            <ol>
+              <li>Öffne <strong>the-odds-api.com</strong> und wähle den kostenlosen Plan „Starter“.</li>
+              <li>Du bekommst deinen persönlichen Schlüssel per E-Mail.</li>
+              <li>Füge ihn hier ein und tippe auf „Speichern“.</li>
+            </ol>
+            <div class="schluessel-zeile">
+              <input type="text" id="api-schluessel" placeholder="API-Schlüssel einfügen" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <button type="button" class="text-button" id="schluessel-speichern">Speichern</button>
+            </div>
+          </div>
+
+          <p class="fehler" id="fussball-fehler" hidden></p>
+
+          <!-- Interessante Quoten -->
+          <div class="tipps-bereich" id="tipps-bereich" hidden>
+            <h3 class="unter-titel">🔎 Interessante Quoten</h3>
+            <p class="erklaerung">Die beste Quote liegt mindestens 3 % über dem fairen Wert, den alle Buchmacher zusammen einschätzen.</p>
+            <ul class="tipp-liste" id="tipp-liste"></ul>
+            <p class="leer-text" id="tipps-leer" hidden>Gerade keine auffälligen Quoten – meistens liegen die Buchmacher eng beieinander.</p>
+          </div>
+
+          <!-- Spiele, nach Ligen sortiert -->
+          <div id="spiele-bereich"></div>
+
+          <!-- Einstellungen und Erklärung -->
+          <details class="fussball-details" id="fussball-einstellungen" hidden>
+            <summary>Einstellungen</summary>
+            <p class="erklaerung">Ligen – jede Liga mit Spielen kostet 1 Abruf pro Aktualisierung:</p>
+            <div class="liga-auswahl" id="liga-auswahl"></div>
+            <label class="schalter">
+              <input type="checkbox" id="nur-deutsche">
+              Beste Quote nur von deutschen Angeboten (Tipico DE, Winamax DE)
+            </label>
+            <button type="button" class="text-button" id="schluessel-aendern">API-Schlüssel ändern</button>
+          </details>
+
+          <details class="fussball-details">
+            <summary>Wie wird gerechnet?</summary>
+            <p class="erklaerung">Jede Quote enthält eine Gewinnspanne des Buchmachers. DayFlow rechnet sie bei jedem Anbieter heraus und bildet den Durchschnitt aller Anbieter – das ist die <strong>faire Wahrscheinlichkeit</strong> (die Prozentzahl unter jeder Quote). „Interessant“ ist eine Quote, wenn die beste Quote höher ist, als diese Wahrscheinlichkeit rechtfertigt. Das ist keine Garantie: Auch interessante Wetten gehen oft verloren, und Quoten ändern sich ständig.</p>
+          </details>
+
+          <p class="hinweis-klein">18+ · Wetten kann süchtig machen. Hilfe: check-dein-spiel.de · 0800 1 37 27 00 (kostenlos, anonym)</p>
+        </div>
       </section>
 
       <!-- Ansicht 2: Aufgaben (NEU in Schritt 2) -->

@@ -1,5 +1,5 @@
 // =========================================
-// DayFlow – Funktionen (Schritt 5)
+// DayFlow – Funktionen (Schritt 6)
 // =========================================
 
 // ---------- 1. Datum und Begrüßung ----------
@@ -1004,11 +1004,577 @@ zuAufgabenButton.addEventListener("click", function () {
   wechsleAnsicht("aufgaben");
 });
 
-// ---------- 11. Start ----------
+// ---------- 11. Fußball und Quoten (NEU in Schritt 6) ----------
+
+// Die Ligen, die DayFlow kennt. "key" ist der Name bei The Odds API.
+// "standard: true" = beim ersten Start ausgewählt.
+const LIGEN = [
+  { key: "soccer_germany_bundesliga", name: "Bundesliga", standard: true },
+  { key: "soccer_epl", name: "Premier League", standard: true },
+  { key: "soccer_spain_la_liga", name: "La Liga", standard: true },
+  { key: "soccer_italy_serie_a", name: "Serie A", standard: true },
+  { key: "soccer_france_ligue_one", name: "Ligue 1", standard: true },
+  { key: "soccer_uefa_champs_league", name: "Champions League", standard: true },
+  { key: "soccer_uefa_europa_league", name: "Europa League", standard: true },
+  { key: "soccer_uefa_europa_conference_league", name: "Conference League", standard: false },
+  { key: "soccer_germany_bundesliga2", name: "2. Bundesliga", standard: false },
+  { key: "soccer_netherlands_eredivisie", name: "Eredivisie", standard: false },
+  { key: "soccer_portugal_primeira_liga", name: "Primeira Liga", standard: false }
+];
+
+// Deutsche Angebote in der Liste von The Odds API
+const DEUTSCHE_ANBIETER = ["tipico_de", "winamax_de"];
+
+// Ab wann eine Quote "interessant" ist: 3 % über dem fairen Wert,
+// und mindestens 5 Buchmacher, damit der Durchschnitt aussagekräftig ist.
+const MINDEST_VALUE = 0.03;
+const MINDEST_ANBIETER = 5;
+
+const FUSSBALL_EINSTELLUNGEN = "dayflow-fussball-einstellungen";
+const FUSSBALL_DATEN = "dayflow-fussball-daten";
+
+// Einstellungen: API-Schlüssel, ausgewählte Ligen, nur deutsche Anbieter?
+let fussball = {
+  schluessel: "",
+  ligen: LIGEN.filter(function (liga) {
+    return liga.standard;
+  }).map(function (liga) {
+    return liga.key;
+  }),
+  nurDeutsche: false
+};
+
+// Zuletzt geladene Spiele: { stand, rest, spiele: [...] } – oder null
+let fussballDaten = null;
+
+const quotenButton = document.getElementById("quoten-aktualisieren");
+const fussballStand = document.getElementById("fussball-stand");
+const fussballEinrichtung = document.getElementById("fussball-einrichtung");
+const schluesselFeld = document.getElementById("api-schluessel");
+const schluesselSpeichern = document.getElementById("schluessel-speichern");
+const fussballFehler = document.getElementById("fussball-fehler");
+const tippsBereich = document.getElementById("tipps-bereich");
+const tippListe = document.getElementById("tipp-liste");
+const tippsLeer = document.getElementById("tipps-leer");
+const spieleBereich = document.getElementById("spiele-bereich");
+const fussballEinstellungen = document.getElementById("fussball-einstellungen");
+const ligaAuswahl = document.getElementById("liga-auswahl");
+const nurDeutscheFeld = document.getElementById("nur-deutsche");
+const schluesselAendern = document.getElementById("schluessel-aendern");
+
+// Liest einen Wert aus dem localStorage (oder gibt "standard" zurück).
+function leseSpeicher(name, standard) {
+  try {
+    const text = localStorage.getItem(name);
+    return text === null ? standard : JSON.parse(text);
+  } catch (fehler) {
+    return standard;
+  }
+}
+
+function schreibeSpeicher(name, wert) {
+  try {
+    localStorage.setItem(name, JSON.stringify(wert));
+  } catch (fehler) {
+    zeigeMeldung("Speichern hat nicht geklappt. Ist der Speicher voll oder der private Modus aktiv?");
+  }
+}
+
+function zeigeFussballFehler(nachricht) {
+  fussballFehler.textContent = nachricht;
+  fussballFehler.hidden = false;
+}
+
+function ligaName(key) {
+  const liga = LIGEN.find(function (l) {
+    return l.key === key;
+  });
+  return liga ? liga.name : key;
+}
+
+// 1.5 → "1,50"
+function alsQuote(zahl) {
+  return zahl.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Uhrzeit eines Spiels, z. B. "20:45"
+function anstossZeit(spiel) {
+  return new Date(spiel.start).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+}
+
+// Die API möchte Zeiten wie "2026-11-03T00:00:00Z" – ohne Millisekunden.
+function alsApiZeit(datum) {
+  return datum.toISOString().slice(0, 19) + "Z";
+}
+
+// Macht aus der großen Antwort der API ein kleines Objekt pro Spiel:
+// für jeden Buchmacher nur die drei Quoten Heim / Unentschieden / Gast.
+function vereinfacheSpiel(ereignis, liga) {
+  const quoten = [];
+  (ereignis.bookmakers || []).forEach(function (anbieter) {
+    const markt = (anbieter.markets || []).find(function (m) {
+      return m.key === "h2h"; // h2h = "head to head" = Sieg/Unentschieden/Sieg
+    });
+    if (!markt) {
+      return;
+    }
+    const eintrag = { key: anbieter.key, name: anbieter.title, heim: 0, unentschieden: 0, gast: 0 };
+    markt.outcomes.forEach(function (ausgang) {
+      if (ausgang.name === ereignis.home_team) {
+        eintrag.heim = ausgang.price;
+      } else if (ausgang.name === ereignis.away_team) {
+        eintrag.gast = ausgang.price;
+      } else {
+        eintrag.unentschieden = ausgang.price; // alles andere ist das Unentschieden
+      }
+    });
+    quoten.push(eintrag);
+  });
+
+  return {
+    id: ereignis.id,
+    liga: liga,
+    start: ereignis.commence_time,
+    heim: ereignis.home_team,
+    gast: ereignis.away_team,
+    quoten: quoten
+  };
+}
+
+// Die Analyse eines Spiels:
+// 1. Bei jedem Buchmacher die Gewinnspanne herausrechnen → faire Wahrscheinlichkeiten.
+// 2. Den Durchschnitt aller Buchmacher bilden (die "Meinung des Marktes").
+// 3. Die beste Quote suchen und vergleichen: Value = beste Quote × Wahrscheinlichkeit − 1.
+function analysiereSpiel(spiel) {
+  const vollstaendig = spiel.quoten.filter(function (q) {
+    return q.heim > 1 && q.unentschieden > 1 && q.gast > 1;
+  });
+  const summe = { heim: 0, unentschieden: 0, gast: 0 };
+
+  vollstaendig.forEach(function (q) {
+    const heim = 1 / q.heim;
+    const unentschieden = 1 / q.unentschieden;
+    const gast = 1 / q.gast;
+    const gesamt = heim + unentschieden + gast; // > 1, der Rest ist die Spanne des Buchmachers
+    summe.heim += heim / gesamt;
+    summe.unentschieden += unentschieden / gesamt;
+    summe.gast += gast / gesamt;
+  });
+
+  const analyse = { anzahlAnbieter: vollstaendig.length };
+  ["heim", "unentschieden", "gast"].forEach(function (tipp) {
+    const wahrscheinlichkeit = vollstaendig.length > 0 ? summe[tipp] / vollstaendig.length : null;
+
+    let beste = null;
+    vollstaendig.forEach(function (q) {
+      if (fussball.nurDeutsche && !DEUTSCHE_ANBIETER.includes(q.key)) {
+        return;
+      }
+      if (!beste || q[tipp] > beste.quote) {
+        beste = { quote: q[tipp], anbieter: q.name };
+      }
+    });
+
+    analyse[tipp] = {
+      wahrscheinlichkeit: wahrscheinlichkeit,
+      beste: beste,
+      value: wahrscheinlichkeit !== null && beste ? beste.quote * wahrscheinlichkeit - 1 : null
+    };
+  });
+  return analyse;
+}
+
+function istInteressant(analyse, tipp) {
+  return analyse.anzahlAnbieter >= MINDEST_ANBIETER &&
+    analyse[tipp].value !== null && analyse[tipp].value >= MINDEST_VALUE;
+}
+
+function hatBegonnen(spiel) {
+  return new Date(spiel.start) <= new Date();
+}
+
+// Text für einen Tipp, z. B. "Sieg Bayern Munich" oder "Unentschieden"
+function tippName(spiel, tipp) {
+  if (tipp === "heim") {
+    return "Sieg " + spiel.heim;
+  }
+  if (tipp === "gast") {
+    return "Sieg " + spiel.gast;
+  }
+  return "Unentschieden";
+}
+
+// Eine der drei Quoten-Boxen (1 / X / 2) eines Spiels
+function erstelleQuotenBox(spiel, analyse, tipp, zeichen) {
+  const box = document.createElement("div");
+  box.className = "quote";
+  const daten = analyse[tipp];
+
+  const kopf = document.createElement("span");
+  kopf.className = "quote-tipp";
+  kopf.textContent = zeichen;
+  box.appendChild(kopf);
+
+  const wert = document.createElement("span");
+  wert.className = "quote-wert";
+  wert.textContent = daten.beste ? alsQuote(daten.beste.quote) : "–";
+  box.appendChild(wert);
+
+  const prozent = document.createElement("span");
+  prozent.className = "quote-prozent";
+  prozent.textContent = daten.wahrscheinlichkeit !== null ? Math.round(daten.wahrscheinlichkeit * 100) + " %" : "";
+  box.appendChild(prozent);
+
+  if (daten.beste) {
+    box.title = tippName(spiel, tipp) + ": " + alsQuote(daten.beste.quote) + " bei " + daten.beste.anbieter;
+  }
+  if (!hatBegonnen(spiel) && istInteressant(analyse, tipp)) {
+    box.classList.add("value");
+  }
+  return box;
+}
+
+function erstelleSpielEintrag(spiel) {
+  const analyse = analysiereSpiel(spiel);
+  const eintrag = document.createElement("li");
+  eintrag.className = "spiel";
+  if (hatBegonnen(spiel)) {
+    eintrag.classList.add("begonnen");
+  }
+
+  const info = document.createElement("div");
+  info.className = "spiel-info";
+  const zeit = document.createElement("span");
+  zeit.className = "spiel-zeit";
+  zeit.textContent = hatBegonnen(spiel) ? "Begonnen" : anstossZeit(spiel) + " Uhr";
+  info.appendChild(zeit);
+  const teams = document.createElement("p");
+  teams.className = "spiel-teams";
+  teams.textContent = spiel.heim + " – " + spiel.gast; // Text von außen: immer textContent!
+  info.appendChild(teams);
+  eintrag.appendChild(info);
+
+  const quoten = document.createElement("div");
+  quoten.className = "quoten";
+  quoten.appendChild(erstelleQuotenBox(spiel, analyse, "heim", "1"));
+  quoten.appendChild(erstelleQuotenBox(spiel, analyse, "unentschieden", "X"));
+  quoten.appendChild(erstelleQuotenBox(spiel, analyse, "gast", "2"));
+  eintrag.appendChild(quoten);
+
+  return eintrag;
+}
+
+// Baut die komplette Fußball-Karte neu auf.
+function zeigeFussball() {
+  const hatSchluessel = fussball.schluessel !== "";
+  fussballEinrichtung.hidden = hatSchluessel;
+  quotenButton.hidden = !hatSchluessel;
+  fussballEinstellungen.hidden = !hatSchluessel;
+  zeigeLigaAuswahl();
+
+  tippsBereich.hidden = true;
+  spieleBereich.innerHTML = "";
+  fussballStand.hidden = true;
+
+  if (!hatSchluessel || !fussballDaten) {
+    return;
+  }
+
+  // Nur Spiele der ausgewählten Ligen
+  const spiele = fussballDaten.spiele.filter(function (spiel) {
+    return fussball.ligen.includes(spiel.liga);
+  });
+
+  // Welcher Tag wird gezeigt? Heute – oder der nächste Tag mit Spielen.
+  const heute = alsDatumText(new Date());
+  const tage = spiele.map(function (spiel) {
+    return alsDatumText(new Date(spiel.start));
+  }).sort();
+  const tag = tage.includes(heute) ? heute : tage.find(function (t) {
+    return t > heute;
+  });
+
+  // Zeile "Stand"
+  const stand = new Date(fussballDaten.stand);
+  let standText = "Stand: " + formatiereDatum(alsDatumText(stand)) + ", " +
+    stand.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
+  if (fussballDaten.rest !== null) {
+    standText += " · noch " + fussballDaten.rest + " Abrufe übrig";
+  }
+  fussballStand.textContent = standText;
+  fussballStand.hidden = false;
+
+  if (!tag) {
+    const leer = document.createElement("p");
+    leer.className = "leer-text";
+    leer.textContent = "In deinen Ligen sind in den nächsten Tagen keine Spiele angesetzt.";
+    spieleBereich.appendChild(leer);
+    return;
+  }
+
+  const spieleDesTages = spiele
+    .filter(function (spiel) {
+      return alsDatumText(new Date(spiel.start)) === tag;
+    })
+    .sort(function (a, b) {
+      return a.start < b.start ? -1 : 1;
+    });
+
+  // --- Interessante Quoten: die 5 mit dem höchsten Value ---
+  const tipps = [];
+  spieleDesTages.forEach(function (spiel) {
+    if (hatBegonnen(spiel)) {
+      return; // laufende Spiele haben Live-Quoten – nicht vergleichbar
+    }
+    const analyse = analysiereSpiel(spiel);
+    ["heim", "unentschieden", "gast"].forEach(function (tipp) {
+      if (istInteressant(analyse, tipp)) {
+        tipps.push({ spiel: spiel, tipp: tipp, daten: analyse[tipp] });
+      }
+    });
+  });
+  tipps.sort(function (a, b) {
+    return b.daten.value - a.daten.value;
+  });
+
+  tippListe.innerHTML = "";
+  tipps.slice(0, 5).forEach(function (t) {
+    tippListe.appendChild(erstelleTippEintrag(t));
+  });
+  tippsLeer.hidden = tipps.length > 0;
+  tippsBereich.hidden = false;
+
+  // --- Überschrift: heute oder nächster Spieltag ---
+  const ueberschrift = document.createElement("p");
+  ueberschrift.className = "unter-titel";
+  ueberschrift.textContent = tag === heute
+    ? "Spiele heute"
+    : "Heute keine Spiele – nächste Spiele: " + formatiereDatum(tag);
+  spieleBereich.appendChild(ueberschrift);
+
+  // --- Spiele nach Ligen, aufklappbar ---
+  LIGEN.forEach(function (liga) {
+    const ligaSpiele = spieleDesTages.filter(function (spiel) {
+      return spiel.liga === liga.key;
+    });
+    if (ligaSpiele.length === 0) {
+      return;
+    }
+
+    const bereich = document.createElement("details");
+    bereich.className = "liga";
+    bereich.open = spieleDesTages.length <= 6; // wenige Spiele: gleich aufgeklappt
+
+    const titel = document.createElement("summary");
+    titel.textContent = liga.name + " ";
+    const anzahl = document.createElement("span");
+    anzahl.className = "liga-anzahl";
+    anzahl.textContent = "· " + ligaSpiele.length + (ligaSpiele.length === 1 ? " Spiel" : " Spiele");
+    titel.appendChild(anzahl);
+    bereich.appendChild(titel);
+
+    const liste = document.createElement("ul");
+    liste.className = "spiel-liste";
+    ligaSpiele.forEach(function (spiel) {
+      liste.appendChild(erstelleSpielEintrag(spiel));
+    });
+    bereich.appendChild(liste);
+    spieleBereich.appendChild(bereich);
+  });
+}
+
+function erstelleTippEintrag(t) {
+  const eintrag = document.createElement("li");
+  eintrag.className = "tipp";
+
+  const text = document.createElement("div");
+  text.className = "tipp-text";
+
+  const wette = document.createElement("p");
+  wette.className = "tipp-wette";
+  wette.textContent = tippName(t.spiel, t.tipp) + " · " + alsQuote(t.daten.beste.quote) + " bei " + t.daten.beste.anbieter;
+  text.appendChild(wette);
+
+  const spiel = document.createElement("p");
+  spiel.className = "tipp-spiel";
+  spiel.textContent = t.spiel.heim + " – " + t.spiel.gast + " · " + anstossZeit(t.spiel) + " Uhr · " +
+    ligaName(t.spiel.liga) + " · fairer Wert " + alsQuote(1 / t.daten.wahrscheinlichkeit);
+  text.appendChild(spiel);
+
+  // Sehr große Abweichungen sind oft veraltete oder fehlerhafte Quoten
+  if (t.daten.value > 0.15) {
+    const warnung = document.createElement("p");
+    warnung.className = "tipp-warnung";
+    warnung.textContent = "Ungewöhnlich hoch – vielleicht veraltet. Prüfe die Quote direkt beim Anbieter.";
+    text.appendChild(warnung);
+  }
+  eintrag.appendChild(text);
+
+  const abzeichen = document.createElement("span");
+  abzeichen.className = "value-abzeichen";
+  abzeichen.textContent = "+" + Math.round(t.daten.value * 100) + " %";
+  eintrag.appendChild(abzeichen);
+
+  return eintrag;
+}
+
+// Häkchen für jede Liga in den Einstellungen
+function zeigeLigaAuswahl() {
+  ligaAuswahl.innerHTML = "";
+  LIGEN.forEach(function (liga) {
+    const beschriftung = document.createElement("label");
+    beschriftung.className = "liga-option";
+    const feld = document.createElement("input");
+    feld.type = "checkbox";
+    feld.checked = fussball.ligen.includes(liga.key);
+    feld.addEventListener("change", function () {
+      if (feld.checked) {
+        fussball.ligen.push(liga.key);
+      } else {
+        fussball.ligen = fussball.ligen.filter(function (key) {
+          return key !== liga.key;
+        });
+      }
+      schreibeSpeicher(FUSSBALL_EINSTELLUNGEN, fussball);
+      zeigeFussball();
+    });
+    beschriftung.appendChild(feld);
+    beschriftung.appendChild(document.createTextNode(liga.name));
+    ligaAuswahl.appendChild(beschriftung);
+  });
+  nurDeutscheFeld.checked = fussball.nurDeutsche;
+}
+
+// Macht aus einer Fehler-Antwort der API einen verständlichen Satz.
+async function quotenFehlerText(antwort) {
+  let info = {};
+  try {
+    info = await antwort.json();
+  } catch (fehler) {
+    // keine lesbare Antwort – dann bleibt "info" leer
+  }
+  if (info.error_code === "INVALID_KEY") {
+    return "Dein API-Schlüssel ist ungültig. Tippe in den Einstellungen auf „API-Schlüssel ändern“.";
+  }
+  if (antwort.status === 401 || antwort.status === 429) {
+    return "Der Quoten-Dienst hat den Abruf abgelehnt – vermutlich sind deine Abrufe für diesen Monat aufgebraucht. (" +
+      (info.message || "Fehler " + antwort.status) + ")";
+  }
+  return "Die Quoten konnten nicht geladen werden (Fehler " + antwort.status + "). Versuch es später noch einmal.";
+}
+
+// Holt die aktuellen Quoten für alle ausgewählten Ligen.
+// "async" bedeutet: Diese Funktion darf auf Antworten aus dem Internet warten ("await").
+async function ladeQuoten() {
+  if (fussball.ligen.length === 0) {
+    zeigeFussballFehler("Wähle in den Einstellungen mindestens eine Liga aus.");
+    return;
+  }
+
+  fussballFehler.hidden = true;
+  quotenButton.disabled = true;
+  quotenButton.textContent = "Lädt …";
+
+  // Spiele von heute 0 Uhr bis in 8 Tagen
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+  const von = alsApiZeit(heute);
+  const bis = alsApiZeit(plusTage(heute, 8));
+
+  const neueSpiele = [];
+  let rest = null;
+
+  try {
+    for (let i = 0; i < fussball.ligen.length; i++) {
+      const liga = fussball.ligen[i];
+      const adresse = "https://api.the-odds-api.com/v4/sports/" + liga + "/odds/" +
+        "?apiKey=" + encodeURIComponent(fussball.schluessel) +
+        "&regions=eu&markets=h2h&oddsFormat=decimal&dateFormat=iso" +
+        "&commenceTimeFrom=" + von + "&commenceTimeTo=" + bis;
+
+      const antwort = await fetch(adresse); // warten, bis die Antwort da ist
+      if (!antwort.ok) {
+        throw new Error(await quotenFehlerText(antwort));
+      }
+      const ereignisse = await antwort.json();
+      rest = antwort.headers.get("x-requests-remaining") || rest;
+
+      ereignisse.forEach(function (ereignis) {
+        neueSpiele.push(vereinfacheSpiel(ereignis, liga));
+      });
+    }
+
+    fussballDaten = { stand: new Date().toISOString(), rest: rest, spiele: neueSpiele };
+    schreibeSpeicher(FUSSBALL_DATEN, fussballDaten);
+  } catch (fehler) {
+    // TypeError bedeutet hier: Es kam gar keine Antwort (z. B. kein Internet)
+    if (fehler instanceof TypeError) {
+      zeigeFussballFehler("Keine Verbindung zum Quoten-Dienst. Bist du online?");
+    } else {
+      zeigeFussballFehler(fehler.message);
+    }
+  }
+
+  quotenButton.disabled = false;
+  quotenButton.textContent = "Aktualisieren";
+  zeigeFussball();
+}
+
+quotenButton.addEventListener("click", ladeQuoten);
+
+schluesselSpeichern.addEventListener("click", function () {
+  const schluessel = schluesselFeld.value.trim();
+  if (schluessel === "" || schluessel.includes(" ")) {
+    zeigeFussballFehler("Bitte füge deinen API-Schlüssel aus der E-Mail ein (ohne Leerzeichen).");
+    return;
+  }
+  fussball.schluessel = schluessel;
+  schreibeSpeicher(FUSSBALL_EINSTELLUNGEN, fussball);
+  zeigeFussball();
+  ladeQuoten();
+});
+
+schluesselAendern.addEventListener("click", function () {
+  schluesselFeld.value = fussball.schluessel;
+  fussballEinrichtung.hidden = false;
+  fussballEinstellungen.open = false;
+});
+
+nurDeutscheFeld.addEventListener("change", function () {
+  fussball.nurDeutsche = nurDeutscheFeld.checked;
+  schreibeSpeicher(FUSSBALL_EINSTELLUNGEN, fussball);
+  zeigeFussball();
+});
+
+// Beim Start: Einstellungen und letzte Quoten laden.
+// Automatisch neu abrufen nur, wenn die Quoten nicht von heute sind –
+// so reichen die 500 kostenlosen Abrufe für den ganzen Monat.
+function starteFussball() {
+  const gespeichert = leseSpeicher(FUSSBALL_EINSTELLUNGEN, null);
+  if (gespeichert) {
+    fussball.schluessel = gespeichert.schluessel || "";
+    fussball.ligen = Array.isArray(gespeichert.ligen) ? gespeichert.ligen : fussball.ligen;
+    fussball.nurDeutsche = gespeichert.nurDeutsche === true;
+  }
+  fussballDaten = leseSpeicher(FUSSBALL_DATEN, null);
+  if (fussballDaten && !Array.isArray(fussballDaten.spiele)) {
+    fussballDaten = null; // unbrauchbare Daten ignorieren
+  }
+
+  zeigeFussball();
+
+  const vonHeute = fussballDaten && alsDatumText(new Date(fussballDaten.stand)) === alsDatumText(new Date());
+  if (fussball.schluessel && !vonHeute) {
+    ladeQuoten();
+  }
+}
+
+// ---------- 12. Start ----------
 
 aufgaben = ladeAufgaben(); // NEU in Schritt 5: gespeicherte Aufgaben holen
 zeigeDatumUndBegruessung();
 zeigeAlles();
+starteFussball(); // NEU in Schritt 6
 
 // Jede Minute aktualisieren – so stimmen Gruß, Datum, "Als Nächstes"
 // und "Überfällig" auch, wenn die App lange offen bleibt.

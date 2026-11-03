@@ -714,3 +714,277 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* =========================================
+   NEU in Schritt 6: Fußball und Quoten
+   ========================================= */
+
+/* 15. Kopfzeile einer Karte: Titel links, Button rechts */
+.karten-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.karten-kopf .karten-titel {
+  margin: 0;
+}
+
+.karten-kopf .text-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.unter-titel {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.erklaerung {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--text-leise);
+}
+
+/* Einrichtung mit API-Schlüssel */
+.fussball-einrichtung ol {
+  margin: 8px 0 14px;
+  padding-left: 20px;
+  color: var(--text-leise);
+}
+
+.schluessel-zeile {
+  display: flex;
+  gap: 8px;
+}
+
+.schluessel-zeile input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--hintergrund);
+  border: 1px solid var(--karte-rand);
+  border-radius: 10px;
+}
+
+/* 16. Interessante Quoten */
+.tipps-bereich {
+  margin: 4px 0 18px;
+  padding: 14px 16px;
+  background: rgba(111, 211, 160, 0.06);
+  border: 1px solid rgba(111, 211, 160, 0.3);
+  border-radius: 12px;
+}
+
+.tipp-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tipp {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tipp-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tipp-wette {
+  margin: 0;
+  font-weight: 600;
+}
+
+.tipp-spiel {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--text-leise);
+}
+
+.tipp-warnung {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--mittel);
+}
+
+.value-abzeichen {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(111, 211, 160, 0.15);
+  color: var(--niedrig);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* 17. Spiele nach Ligen (aufklappbar) */
+.liga {
+  border-top: 1px solid var(--karte-rand);
+}
+
+.liga summary,
+.fussball-details summary {
+  padding: 12px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.liga-anzahl {
+  font-weight: 400;
+  color: var(--text-leise);
+}
+
+.spiel-liste {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spiel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--hintergrund);
+  border: 1px solid var(--karte-rand);
+  border-radius: 12px;
+}
+
+.spiel.begonnen {
+  opacity: 0.55;
+}
+
+.spiel-info {
+  min-width: 0;
+}
+
+.spiel-zeit {
+  font-size: 13px;
+  color: var(--akzent);
+  font-weight: 600;
+}
+
+.spiel-teams {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Die drei Quoten 1 / X / 2 */
+.quoten {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  gap: 6px;
+}
+
+.quote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+  background: var(--karte);
+  border: 1px solid var(--karte-rand);
+  border-radius: 8px;
+  line-height: 1.25;
+}
+
+.quote-tipp {
+  font-size: 11px;
+  color: var(--text-leise);
+}
+
+.quote-wert {
+  font-weight: 700;
+}
+
+.quote-prozent {
+  font-size: 11px;
+  color: var(--text-leise);
+}
+
+/* Interessante Quote: grün hervorgehoben */
+.quote.value {
+  border-color: var(--niedrig);
+  background: rgba(111, 211, 160, 0.1);
+}
+
+.quote.value .quote-wert {
+  color: var(--niedrig);
+}
+
+/* 18. Einstellungen und Hinweise */
+.fussball-details {
+  border-top: 1px solid var(--karte-rand);
+}
+
+.fussball-details[hidden] {
+  display: none;
+}
+
+.liga-auswahl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 6px 12px;
+  margin-bottom: 12px;
+}
+
+.schalter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.liga-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.schalter input,
+.liga-option input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.fussball-details > .text-button {
+  margin-bottom: 14px;
+}
+
+.hinweis-klein {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--text-leise);
+}
+
+/* Auf dem Handy: Quoten unter die Mannschaften */
+@media (max-width: 600px) {
+  .spiel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quoten {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
