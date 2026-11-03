@@ -32,7 +32,26 @@
         <div class="karte begruessung-karte">
           <p class="datum" id="datum">Datum wird geladen …</p>
           <h1 id="begruessung">Hallo!</h1>
-          <p class="untertitel">Schön, dass du da bist. Hier entsteht dein persönlicher Tagesüberblick.</p>
+
+          <!-- NEU in Schritt 5: Zusammenfassung, Fortschritt und Zahlen -->
+          <p class="untertitel" id="tages-zusammenfassung">Schön, dass du da bist.</p>
+          <div class="fortschritt" id="fortschritt" role="progressbar" aria-label="Fortschritt heute" aria-valuemin="0" aria-valuemax="100" hidden>
+            <div class="fortschritt-balken" id="fortschritt-balken"></div>
+          </div>
+          <div class="zahlen">
+            <div class="zahl-kachel">
+              <span class="zahl" id="zahl-offen">0</span>
+              <span class="zahl-name">Offen</span>
+            </div>
+            <div class="zahl-kachel">
+              <span class="zahl" id="zahl-erledigt">0</span>
+              <span class="zahl-name">Erledigt</span>
+            </div>
+            <div class="zahl-kachel" id="kachel-ueberfaellig">
+              <span class="zahl" id="zahl-ueberfaellig">0</span>
+              <span class="zahl-name">Überfällig</span>
+            </div>
+          </div>
         </div>
 
         <!-- NEU in Schritt 4: Sprechen und direkt eintragen -->
@@ -61,6 +80,14 @@
               <button type="button" class="text-button" id="zu-aufgaben-button">Zu den Aufgaben</button>
             </div>
           </div>
+        </div>
+
+        <!-- NEU in Schritt 5: Was heute ansteht -->
+        <div class="karte">
+          <h2 class="karten-titel">Dein Tag</h2>
+          <p class="naechster-termin" id="naechster-termin" hidden></p>
+          <p class="leer-text" id="heute-leer">Für heute ist nichts eingetragen.</p>
+          <ul class="aufgaben-liste" id="heute-liste"></ul>
         </div>
       </section>
 
@@ -135,6 +162,12 @@
       </section>
 
     </main>
+
+    <!-- NEU in Schritt 5: Meldungs-Leiste unten, z. B. "Gelöscht – Rückgängig" -->
+    <div class="meldung" id="meldung" role="status" hidden>
+      <span id="meldung-text"></span>
+      <button type="button" class="meldung-button" id="meldung-button" hidden></button>
+    </div>
   </div>
   <!-- ===== BIS HIER für CodePen kopieren ===== -->
 

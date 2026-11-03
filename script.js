@@ -1,5 +1,5 @@
 // =========================================
-// DayFlow – Funktionen (Schritt 4)
+// DayFlow – Funktionen (Schritt 5)
 // =========================================
 
 // ---------- 1. Datum und Begrüßung ----------
@@ -56,10 +56,124 @@ navButtons.forEach(function (button) {
   });
 });
 
-// ---------- 3. Aufgaben (NEU in Schritt 2) ----------
+// ---------- 3. Hilfsfunktionen für Datum und Uhrzeit ----------
+
+// Macht aus einem Date-Objekt den Text "2026-10-30" (wie im Datumsfeld).
+function alsDatumText(datum) {
+  const monat = String(datum.getMonth() + 1).padStart(2, "0");
+  const tag = String(datum.getDate()).padStart(2, "0");
+  return datum.getFullYear() + "-" + monat + "-" + tag;
+}
+
+// Macht aus 9 und 5 den Text "09:05".
+function alsUhrzeitText(stunde, minute) {
+  return String(stunde).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+}
+
+function plusTage(datum, anzahl) {
+  const neu = new Date(datum);
+  neu.setDate(neu.getDate() + anzahl);
+  return neu;
+}
+
+// Macht aus "2026-10-30" wieder ein Date-Objekt (Monate zählen ab 0).
+function alsDatum(datumText) {
+  const teile = datumText.split("-"); // ["2026", "10", "30"]
+  return new Date(teile[0], teile[1] - 1, teile[2]);
+}
+
+// NEU in Schritt 5: "Heute", "Morgen", "Gestern" – sonst z. B. "Fr., 30. Okt."
+// (die Jahreszahl nur, wenn es nicht dieses Jahr ist)
+function formatiereDatum(datumText) {
+  const jetzt = new Date();
+  if (datumText === alsDatumText(jetzt)) {
+    return "Heute";
+  }
+  if (datumText === alsDatumText(plusTage(jetzt, 1))) {
+    return "Morgen";
+  }
+  if (datumText === alsDatumText(plusTage(jetzt, -1))) {
+    return "Gestern";
+  }
+
+  const datum = alsDatum(datumText);
+  const optionen = { weekday: "short", day: "numeric", month: "short" };
+  if (datum.getFullYear() !== jetzt.getFullYear()) {
+    optionen.year = "numeric";
+  }
+  return datum.toLocaleDateString("de-DE", optionen);
+}
+
+// Datum und (falls vorhanden) Uhrzeit als ein Text, z. B. "Morgen, 10:00 Uhr"
+function formatiereTermin(aufgabe) {
+  let text = formatiereDatum(aufgabe.faellig);
+  if (aufgabe.uhrzeit) {
+    text += ", " + aufgabe.uhrzeit + " Uhr";
+  }
+  return text;
+}
+
+// NEU in Schritt 5: Datum und Uhrzeit einer Aufgabe als Date-Objekt
+function zeitpunkt(aufgabe) {
+  const datum = alsDatum(aufgabe.faellig);
+  const teile = aufgabe.uhrzeit.split(":"); // ["10", "00"]
+  datum.setHours(teile[0], teile[1]);
+  return datum;
+}
+
+// NEU in Schritt 5: Macht aus 135 Minuten den Text "in 2 Std. 15 Min."
+function formatiereAbstand(minuten) {
+  if (minuten < 1) {
+    return "jetzt";
+  }
+  if (minuten < 60) {
+    return "in " + minuten + " Min.";
+  }
+  const stunden = Math.floor(minuten / 60);
+  const restMinuten = minuten % 60;
+  return "in " + stunden + " Std." + (restMinuten > 0 ? " " + restMinuten + " Min." : "");
+}
+
+// ---------- 4. Meldungs-Leiste unten (NEU in Schritt 5) ----------
+
+const meldung = document.getElementById("meldung");
+const meldungText = document.getElementById("meldung-text");
+const meldungButton = document.getElementById("meldung-button");
+
+let meldungTimer = null;   // damit die Leiste nach ein paar Sekunden verschwindet
+let meldungAktion = null;  // was beim Tippen auf den Button passieren soll
+
+// Zeigt unten eine kurze Meldung. Optional mit Button, z. B. "Rückgängig".
+function zeigeMeldung(text, buttonText, aktion) {
+  meldungText.textContent = text;
+  meldungAktion = aktion || null;
+  meldungButton.textContent = buttonText || "";
+  meldungButton.hidden = !aktion;
+  meldung.hidden = false;
+
+  clearTimeout(meldungTimer); // alten Countdown abbrechen
+  meldungTimer = setTimeout(versteckeMeldung, 6000);
+}
+
+function versteckeMeldung() {
+  meldung.hidden = true;
+  meldungAktion = null;
+}
+
+meldungButton.addEventListener("click", function () {
+  if (meldungAktion) {
+    meldungAktion();
+  }
+  versteckeMeldung();
+});
+
+// ---------- 5. Aufgaben: speichern, anzeigen, abhaken, löschen ----------
+
+// Unter diesem Namen liegen die Aufgaben im Speicher des Browsers (NEU in Schritt 5).
+const SPEICHER_NAME = "dayflow-aufgaben";
 
 // Hier merken wir uns alle Aufgaben. Jede Aufgabe ist ein Objekt.
-// Achtung: Noch gehen sie beim Neuladen verloren (Speichern folgt später).
+// Beim Start werden sie aus dem Speicher geladen (siehe Abschnitt 11).
 let aufgaben = [];
 
 // Texte für die Anzeige der Prioritäten
@@ -69,17 +183,98 @@ const prioritaetTexte = {
   hoch: "Hoch"
 };
 
+// Zum Sortieren: hoch kommt vor mittel, mittel vor niedrig
+const prioritaetRang = { hoch: 0, mittel: 1, niedrig: 2 };
+
 // Elemente aus dem HTML, die wir öfter brauchen
 const formular = document.getElementById("aufgabe-formular");
 const titelFeld = document.getElementById("aufgabe-titel");
 const beschreibungFeld = document.getElementById("aufgabe-beschreibung");
 const faelligFeld = document.getElementById("aufgabe-faellig");
-const uhrzeitFeld = document.getElementById("aufgabe-uhrzeit"); // NEU in Schritt 4
+const uhrzeitFeld = document.getElementById("aufgabe-uhrzeit");
 const prioritaetFeld = document.getElementById("aufgabe-prioritaet");
 const fehlerText = document.getElementById("aufgabe-fehler");
 const liste = document.getElementById("aufgaben-liste");
 const leerHinweis = document.getElementById("aufgaben-leer");
 const anzahlText = document.getElementById("aufgaben-anzahl");
+
+// Mülleimer-Symbol für den Löschen-Button. Das ist fester Text von uns
+// (keine Eingabe von außen), deshalb dürfen wir hier innerHTML benutzen.
+const MUELLEIMER_SYMBOL =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<polyline points="3 6 5 6 21 6"></polyline>' +
+  '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>' +
+  '<path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>' +
+  '</svg>';
+
+// NEU in Schritt 5: Lädt die Aufgaben aus dem localStorage.
+function ladeAufgaben() {
+  let text = null;
+  try {
+    text = localStorage.getItem(SPEICHER_NAME);
+  } catch (fehler) {
+    zeigeMeldung("Dein Browser erlaubt kein Speichern. Aufgaben gehen beim Neuladen verloren.");
+    return [];
+  }
+
+  if (text === null) {
+    return []; // erster Start: noch nichts gespeichert
+  }
+
+  try {
+    const daten = JSON.parse(text); // Text → JavaScript-Liste
+    if (!Array.isArray(daten)) {
+      throw new Error("Keine Liste");
+    }
+    // Nur Einträge behalten, die wie eine Aufgabe aussehen,
+    // und fehlende Angaben mit Standardwerten auffüllen.
+    return daten
+      .filter(function (a) {
+        return a && typeof a.titel === "string" && typeof a.faellig === "string";
+      })
+      .map(function (a, nummer) {
+        return {
+          id: String(a.id || Date.now() + "-" + nummer),
+          titel: a.titel,
+          beschreibung: a.beschreibung || "",
+          faellig: a.faellig,
+          uhrzeit: a.uhrzeit || "",
+          prioritaet: prioritaetTexte[a.prioritaet] ? a.prioritaet : "mittel",
+          erledigt: a.erledigt === true
+        };
+      });
+  } catch (fehler) {
+    // Beschädigte Daten nicht einfach überschreiben, sondern zur Sicherheit aufheben
+    try {
+      localStorage.setItem(SPEICHER_NAME + "-defekt", text);
+    } catch (fehler2) {
+      // Wenn auch das nicht geht, können wir nichts mehr tun.
+    }
+    zeigeMeldung("Deine gespeicherten Aufgaben waren beschädigt und konnten nicht geladen werden.");
+    return [];
+  }
+}
+
+// NEU in Schritt 5: Schreibt alle Aufgaben in den localStorage.
+function speichereAufgaben() {
+  try {
+    localStorage.setItem(SPEICHER_NAME, JSON.stringify(aufgaben)); // Liste → Text
+  } catch (fehler) {
+    zeigeMeldung("Speichern hat nicht geklappt. Ist der Speicher voll oder der private Modus aktiv?");
+  }
+}
+
+// NEU in Schritt 5: Nach JEDER Änderung an "aufgaben" aufrufen:
+// erst speichern, dann alles neu anzeigen.
+function aufgabenGeaendert() {
+  speichereAufgaben();
+  zeigeAlles();
+}
+
+function zeigeAlles() {
+  zeigeAufgaben();
+  zeigeTagesUebersicht();
+}
 
 // Zeigt eine Fehlermeldung unter dem Formular an.
 function zeigeFehler(nachricht) {
@@ -92,72 +287,122 @@ function versteckeFehler() {
   fehlerText.hidden = true;
 }
 
-// Macht aus "2026-10-30" einen deutschen Text wie "Fr., 30. Okt. 2026".
-function formatiereDatum(datumText) {
-  const teile = datumText.split("-"); // ["2026", "10", "30"]
-  const datum = new Date(teile[0], teile[1] - 1, teile[2]); // Monate zählen ab 0
-  return datum.toLocaleDateString("de-DE", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
+// NEU in Schritt 5: Überfällig = noch offen und das Datum liegt vor heute.
+// Texte wie "2026-10-29" kann man direkt vergleichen: früher ist "kleiner".
+function istUeberfaellig(aufgabe) {
+  return !aufgabe.erledigt && aufgabe.faellig < alsDatumText(new Date());
 }
 
-// NEU in Schritt 4: Datum und (falls vorhanden) Uhrzeit als ein Text
-function formatiereTermin(aufgabe) {
-  let text = formatiereDatum(aufgabe.faellig);
-  if (aufgabe.uhrzeit) {
-    text += ", " + aufgabe.uhrzeit + " Uhr";
+// NEU in Schritt 5: Reihenfolge der Liste.
+// Offene vor erledigten, dann nach Datum, Uhrzeit (ohne Uhrzeit ans Tagesende) und Priorität.
+function vergleicheAufgaben(a, b) {
+  if (a.erledigt !== b.erledigt) {
+    return a.erledigt ? 1 : -1;
   }
-  return text;
+  const zeitA = a.faellig + " " + (a.uhrzeit || "99:99");
+  const zeitB = b.faellig + " " + (b.uhrzeit || "99:99");
+  if (zeitA !== zeitB) {
+    return zeitA < zeitB ? -1 : 1;
+  }
+  return prioritaetRang[a.prioritaet] - prioritaetRang[b.prioritaet];
 }
 
-// Baut die Liste auf der Seite neu auf – passend zum Array "aufgaben".
+// NEU in Schritt 5: Baut EINEN Listeneintrag mit Haken, Inhalt und Löschen-Button.
+// Wird für die Aufgabenliste UND für "Dein Tag" auf der Startseite benutzt.
+function erstelleAufgabenEintrag(aufgabe) {
+  const eintrag = document.createElement("li");
+  eintrag.className = "aufgabe prio-" + aufgabe.prioritaet;
+  if (aufgabe.erledigt) {
+    eintrag.classList.add("erledigt");
+  }
+
+  // Haken zum Abhaken
+  const haken = document.createElement("input");
+  haken.type = "checkbox";
+  haken.className = "haken";
+  haken.checked = aufgabe.erledigt;
+  haken.setAttribute("aria-label", "Erledigt: " + aufgabe.titel);
+  haken.addEventListener("change", function () {
+    aufgabe.erledigt = haken.checked;
+    aufgabenGeaendert();
+  });
+  eintrag.appendChild(haken);
+
+  // Inhalt: Titel, Beschreibung, Etiketten
+  const inhalt = document.createElement("div");
+  inhalt.className = "aufgabe-inhalt";
+
+  const titel = document.createElement("p");
+  titel.className = "aufgabe-titel";
+  titel.textContent = aufgabe.titel;
+  inhalt.appendChild(titel);
+
+  // Beschreibung nur anzeigen, wenn eine eingegeben wurde
+  if (aufgabe.beschreibung) {
+    const beschreibung = document.createElement("p");
+    beschreibung.className = "aufgabe-beschreibung";
+    beschreibung.textContent = aufgabe.beschreibung;
+    inhalt.appendChild(beschreibung);
+  }
+
+  const info = document.createElement("div");
+  info.className = "aufgabe-info";
+
+  const faellig = document.createElement("span");
+  faellig.className = "etikett";
+  faellig.textContent = formatiereTermin(aufgabe);
+  info.appendChild(faellig);
+
+  const prioritaet = document.createElement("span");
+  prioritaet.className = "etikett prio-" + aufgabe.prioritaet;
+  prioritaet.textContent = "Priorität: " + prioritaetTexte[aufgabe.prioritaet];
+  info.appendChild(prioritaet);
+
+  if (istUeberfaellig(aufgabe)) {
+    const ueberfaellig = document.createElement("span");
+    ueberfaellig.className = "etikett ueberfaellig";
+    ueberfaellig.textContent = "Überfällig";
+    info.appendChild(ueberfaellig);
+  }
+
+  inhalt.appendChild(info);
+  eintrag.appendChild(inhalt);
+
+  // Löschen-Button
+  const loeschen = document.createElement("button");
+  loeschen.type = "button";
+  loeschen.className = "loeschen-button";
+  loeschen.setAttribute("aria-label", "Löschen: " + aufgabe.titel);
+  loeschen.innerHTML = MUELLEIMER_SYMBOL;
+  loeschen.addEventListener("click", function () {
+    loescheAufgabe(aufgabe.id);
+  });
+  eintrag.appendChild(loeschen);
+
+  return eintrag;
+}
+
+// Baut die Aufgabenliste auf der Seite neu auf – passend zum Array "aufgaben".
 function zeigeAufgaben() {
   liste.innerHTML = ""; // alte Einträge entfernen
 
+  const anzahlOffen = aufgaben.filter(function (a) {
+    return !a.erledigt;
+  }).length;
+
   // Leerer Zustand: Hinweis zeigen, wenn es keine Aufgaben gibt
   leerHinweis.hidden = aufgaben.length > 0;
-  anzahlText.textContent = aufgaben.length > 0 ? "(" + aufgaben.length + ")" : "";
+  anzahlText.textContent = aufgaben.length > 0
+    ? "(" + anzahlOffen + " offen, " + (aufgaben.length - anzahlOffen) + " erledigt)"
+    : "";
 
-  aufgaben.forEach(function (aufgabe) {
-    const eintrag = document.createElement("li");
-    eintrag.className = "aufgabe prio-" + aufgabe.prioritaet;
-
-    const titel = document.createElement("p");
-    titel.className = "aufgabe-titel";
-    titel.textContent = aufgabe.titel;
-    eintrag.appendChild(titel);
-
-    // Beschreibung nur anzeigen, wenn eine eingegeben wurde
-    if (aufgabe.beschreibung) {
-      const beschreibung = document.createElement("p");
-      beschreibung.className = "aufgabe-beschreibung";
-      beschreibung.textContent = aufgabe.beschreibung;
-      eintrag.appendChild(beschreibung);
-    }
-
-    const info = document.createElement("div");
-    info.className = "aufgabe-info";
-
-    const faellig = document.createElement("span");
-    faellig.className = "etikett";
-    faellig.textContent = "Fällig: " + formatiereTermin(aufgabe);
-    info.appendChild(faellig);
-
-    const prioritaet = document.createElement("span");
-    prioritaet.className = "etikett prio-" + aufgabe.prioritaet;
-    prioritaet.textContent = "Priorität: " + prioritaetTexte[aufgabe.prioritaet];
-    info.appendChild(prioritaet);
-
-    eintrag.appendChild(info);
-    liste.appendChild(eintrag);
+  // slice() macht eine Kopie – so sortieren wir nur die Anzeige, nicht die Daten
+  aufgaben.slice().sort(vergleicheAufgaben).forEach(function (aufgabe) {
+    liste.appendChild(erstelleAufgabenEintrag(aufgabe));
   });
 }
 
-// NEU in Schritt 4: Legt eine Aufgabe an. Wird vom Formular UND
-// von der Spracheingabe auf der Startseite benutzt.
+// Legt eine Aufgabe an. Wird vom Formular UND von der Spracheingabe benutzt.
 function fuegeAufgabeHinzu(daten) {
   const neueAufgabe = {
     id: Date.now().toString(), // eindeutige Nummer aus der aktuellen Zeit
@@ -170,8 +415,27 @@ function fuegeAufgabeHinzu(daten) {
   };
 
   aufgaben.push(neueAufgabe); // ans Ende der Liste anhängen
-  zeigeAufgaben();
+  aufgabenGeaendert();
   return neueAufgabe;
+}
+
+// NEU in Schritt 5: Löscht eine Aufgabe – mit "Rückgängig" in der Meldungs-Leiste.
+function loescheAufgabe(id) {
+  const position = aufgaben.findIndex(function (a) {
+    return a.id === id;
+  });
+  if (position === -1) {
+    return; // gibt es nicht (mehr)
+  }
+
+  const geloescht = aufgaben[position];
+  aufgaben.splice(position, 1); // 1 Eintrag an dieser Position entfernen
+  aufgabenGeaendert();
+
+  zeigeMeldung("„" + geloescht.titel + "“ gelöscht.", "Rückgängig", function () {
+    aufgaben.splice(position, 0, geloescht); // an alter Position wieder einfügen
+    aufgabenGeaendert();
+  });
 }
 
 // Wird ausgeführt, wenn das Formular abgeschickt wird.
@@ -208,7 +472,90 @@ formular.addEventListener("submit", function (ereignis) {
   zeigeMikroStatus("");
 });
 
-// ---------- 4. Spracheingabe (NEU in Schritt 3, umgebaut in Schritt 4) ----------
+// ---------- 6. Tagesüberblick auf der Startseite (NEU in Schritt 5) ----------
+
+const tagesZusammenfassung = document.getElementById("tages-zusammenfassung");
+const fortschritt = document.getElementById("fortschritt");
+const fortschrittBalken = document.getElementById("fortschritt-balken");
+const zahlOffen = document.getElementById("zahl-offen");
+const zahlErledigt = document.getElementById("zahl-erledigt");
+const zahlUeberfaellig = document.getElementById("zahl-ueberfaellig");
+const kachelUeberfaellig = document.getElementById("kachel-ueberfaellig");
+const naechsterTermin = document.getElementById("naechster-termin");
+const heuteListe = document.getElementById("heute-liste");
+const heuteLeer = document.getElementById("heute-leer");
+
+function zeigeTagesUebersicht() {
+  const jetzt = new Date();
+  const heute = alsDatumText(jetzt);
+
+  // --- Zahlen über alle Aufgaben ---
+  const offen = aufgaben.filter(function (a) {
+    return !a.erledigt;
+  });
+  const ueberfaellig = offen.filter(istUeberfaellig);
+
+  zahlOffen.textContent = offen.length;
+  zahlErledigt.textContent = aufgaben.length - offen.length;
+  zahlUeberfaellig.textContent = ueberfaellig.length;
+  kachelUeberfaellig.classList.toggle("warnung", ueberfaellig.length > 0);
+
+  // --- Fortschritt für heute ---
+  const fuerHeute = aufgaben.filter(function (a) {
+    return a.faellig === heute;
+  });
+  const heuteErledigt = fuerHeute.filter(function (a) {
+    return a.erledigt;
+  }).length;
+  const prozent = fuerHeute.length > 0 ? Math.round((heuteErledigt / fuerHeute.length) * 100) : 0;
+
+  fortschritt.hidden = fuerHeute.length === 0;
+  fortschritt.setAttribute("aria-valuenow", prozent);
+  fortschrittBalken.style.width = prozent + "%";
+
+  if (fuerHeute.length === 0) {
+    tagesZusammenfassung.textContent = "Für heute ist nichts geplant. Tippe unten auf das Mikrofon, um etwas einzutragen.";
+  } else if (heuteErledigt === fuerHeute.length) {
+    tagesZusammenfassung.textContent = "Alles für heute erledigt – stark! 🎉";
+  } else {
+    tagesZusammenfassung.textContent = "Heute: " + heuteErledigt + " von " + fuerHeute.length + " erledigt.";
+  }
+
+  // --- Als Nächstes: der nächste offene Termin mit Uhrzeit ---
+  const kommende = offen
+    .filter(function (a) {
+      return a.uhrzeit && zeitpunkt(a) >= jetzt;
+    })
+    .sort(vergleicheAufgaben);
+
+  if (kommende.length > 0) {
+    const naechste = kommende[0];
+    const minuten = Math.round((zeitpunkt(naechste) - jetzt) / 60000); // Millisekunden → Minuten
+    let text = "Als Nächstes: " + naechste.titel + " – " + formatiereTermin(naechste);
+    if (minuten < 24 * 60) {
+      text += " (" + formatiereAbstand(minuten) + ")"; // Countdown nur innerhalb von 24 Stunden
+    }
+    naechsterTermin.textContent = text;
+    naechsterTermin.hidden = false;
+  } else {
+    naechsterTermin.hidden = true;
+  }
+
+  // --- Liste "Dein Tag": alles für heute plus Überfälliges ---
+  heuteListe.innerHTML = "";
+  const tagesAufgaben = aufgaben
+    .filter(function (a) {
+      return a.faellig === heute || istUeberfaellig(a);
+    })
+    .sort(vergleicheAufgaben);
+
+  tagesAufgaben.forEach(function (aufgabe) {
+    heuteListe.appendChild(erstelleAufgabenEintrag(aufgabe));
+  });
+  heuteLeer.hidden = tagesAufgaben.length > 0;
+}
+
+// ---------- 7. Spracheingabe (NEU in Schritt 3, umgebaut in Schritt 4) ----------
 
 // Safari nennt die Spracherkennung "webkitSpeechRecognition",
 // andere Browser "SpeechRecognition". Wir nehmen, was vorhanden ist.
@@ -296,7 +643,7 @@ function hoereZu(einstellungen) {
   }
 }
 
-// ---------- 5. Sätze verstehen (NEU in Schritt 4) ----------
+// ---------- 8. Sätze verstehen (NEU in Schritt 4) ----------
 
 const wochentage = ["sonntag", "montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag"];
 const monate = ["januar", "februar", "märz", "april", "mai", "juni", "juli",
@@ -321,24 +668,6 @@ function alsZahl(wort) {
     return zahlwoerter[klein];
   }
   return parseInt(klein, 10);
-}
-
-// Macht aus einem Date-Objekt den Text "2026-10-30" (wie im Datumsfeld).
-function alsDatumText(datum) {
-  const monat = String(datum.getMonth() + 1).padStart(2, "0");
-  const tag = String(datum.getDate()).padStart(2, "0");
-  return datum.getFullYear() + "-" + monat + "-" + tag;
-}
-
-// Macht aus 9 und 5 den Text "09:05".
-function alsUhrzeitText(stunde, minute) {
-  return String(stunde).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
-}
-
-function plusTage(datum, anzahl) {
-  const neu = new Date(datum);
-  neu.setDate(neu.getDate() + anzahl);
-  return neu;
 }
 
 // Liegt ein Datum ohne Jahresangabe schon in der Vergangenheit,
@@ -551,7 +880,7 @@ function versteheSatz(satz, jetzt) {
   };
 }
 
-// ---------- 6. Mikrofon im Aufgaben-Formular ----------
+// ---------- 9. Mikrofon im Aufgaben-Formular ----------
 
 const mikroButton = document.getElementById("mikro-button");
 const mikroStatus = document.getElementById("mikro-status");
@@ -589,7 +918,7 @@ mikroButton.addEventListener("click", function () {
   });
 });
 
-// ---------- 7. Sprechen auf der Startseite (NEU in Schritt 4) ----------
+// ---------- 10. Sprechen auf der Startseite (NEU in Schritt 4) ----------
 
 const sprachButton = document.getElementById("sprach-button");
 const sprachStatus = document.getElementById("sprach-status");
@@ -607,7 +936,7 @@ function zeigeSprachFehler(nachricht) {
   sprachFehler.hidden = false;
 }
 
-// Fügt der Bestätigung eine Zeile hinzu, z. B. "Wann: Fr., 30. Okt. 2026, 10:00 Uhr"
+// Fügt der Bestätigung eine Zeile hinzu, z. B. "Wann: Morgen, 10:00 Uhr"
 function bestaetigungsZeile(beschriftung, wert, hinweis) {
   const zeile = document.createElement("li");
   zeile.textContent = beschriftung + ": " + wert;
@@ -664,7 +993,7 @@ rueckgaengigButton.addEventListener("click", function () {
       return aufgabe.id !== letzteSprachAufgabe.id;
     });
     letzteSprachAufgabe = null;
-    zeigeAufgaben();
+    aufgabenGeaendert(); // NEU in Schritt 5: auch im Speicher entfernen
   }
   bestaetigung.hidden = true;
   sprachText.hidden = true;
@@ -675,11 +1004,15 @@ zuAufgabenButton.addEventListener("click", function () {
   wechsleAnsicht("aufgaben");
 });
 
-// ---------- 8. Start ----------
+// ---------- 11. Start ----------
 
+aufgaben = ladeAufgaben(); // NEU in Schritt 5: gespeicherte Aufgaben holen
 zeigeDatumUndBegruessung();
-zeigeAufgaben();
+zeigeAlles();
 
-// Jede Minute aktualisieren – so stimmen Gruß und Datum auch,
-// wenn die App lange offen bleibt (z. B. über Mitternacht).
-setInterval(zeigeDatumUndBegruessung, 60 * 1000);
+// Jede Minute aktualisieren – so stimmen Gruß, Datum, "Als Nächstes"
+// und "Überfällig" auch, wenn die App lange offen bleibt.
+setInterval(function () {
+  zeigeDatumUndBegruessung();
+  zeigeAlles();
+}, 60 * 1000);
