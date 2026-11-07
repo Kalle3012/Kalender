@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DayFlow – mein Alltagsplaner</title>
+  <!-- NEU in Schritt 7: Symbol für den Home-Bildschirm und Farbe der Browser-Leiste -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#0f1115">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== AB HIER für CodePen kopieren ===== -->
+  <div class="app">
+
+    <!-- Kopfbereich: Logo und Navigation -->
+    <header class="topbar">
+      <div class="logo">
+        <!-- NEU in Schritt 8: das App-Symbol als Logo -->
+        <svg class="logo-symbol" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="11" fill="currentColor"></circle>
+          <polyline points="7.5 12.3 10.6 15.3 16.5 9" fill="none" stroke="#0c0e12" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        </svg>
+        DayFlow
+      </div>
+
+      <!-- NEU in Schritt 8: Navigation mit Symbolen -->
+      <nav class="navigation">
+        <button class="nav-button aktiv" data-ansicht="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5 12 3l9 7.5"></path>
+            <path d="M5.5 9v11h13V9"></path>
+          </svg>
+          <span>Übersicht</span>
+        </button>
+        <button class="nav-button" data-ansicht="aufgaben">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3.5" y="3.5" width="17" height="17" rx="4"></rect>
+            <polyline points="8 12.5 11 15.5 16 9.5"></polyline>
+          </svg>
+          <span>Aufgaben</span>
+        </button>
+        <button class="nav-button" data-ansicht="notizen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3z"></path>
+            <path d="m14.5 7.5 3 3"></path>
+          </svg>
+          <span>Notizen</span>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+
+      <!-- Ansicht 1: Dashboard -->
+      <section class="ansicht" id="ansicht-dashboard">
+        <div class="karte begruessung-karte">
+          <p class="datum" id="datum">Datum wird geladen …</p>
+          <h1 id="begruessung">Hallo!</h1>
+
+          <!-- NEU in Schritt 5: Zusammenfassung, Fortschritt und Zahlen -->
+          <p class="untertitel" id="tages-zusammenfassung">Schön, dass du da bist.</p>
+          <div class="fortschritt" id="fortschritt" role="progressbar" aria-label="Fortschritt heute" aria-valuemin="0" aria-valuemax="100" hidden>
+            <div class="fortschritt-balken" id="fortschritt-balken"></div>
+          </div>
+          <div class="zahlen">
+            <div class="zahl-kachel">
+              <span class="zahl" id="zahl-offen">0</span>
+              <span class="zahl-name">Offen</span>
+            </div>
+            <div class="zahl-kachel">
+              <span class="zahl" id="zahl-erledigt">0</span>
+              <span class="zahl-name">Erledigt</span>
+            </div>
+            <div class="zahl-kachel" id="kachel-ueberfaellig">
+              <span class="zahl" id="zahl-ueberfaellig">0</span>
+              <span class="zahl-name">Überfällig</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEU in Schritt 4: Sprechen und direkt eintragen -->
+        <div class="karte sprach-karte">
+          <h2>Was steht an?</h2>
+          <p class="untertitel">Tippe auf das Mikrofon und sag zum Beispiel:<br>„Morgen um 10 Uhr Zahnarzt, wichtig“</p>
+
+          <button type="button" class="sprach-button" id="sprach-button" aria-label="Aufgabe oder Termin einsprechen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+              <path d="M5 11a7 7 0 0 0 14 0"></path>
+              <line x1="12" y1="18" x2="12" y2="21"></line>
+            </svg>
+          </button>
+
+          <p class="sprach-status" id="sprach-status">Tippen zum Sprechen</p>
+          <p class="sprach-text" id="sprach-text" hidden></p>
+          <p class="fehler" id="sprach-fehler" hidden></p>
+
+          <!-- Bestätigung nach dem Eintragen -->
+          <div class="bestaetigung" id="bestaetigung" hidden>
+            <p class="bestaetigung-titel">✓ Eingetragen</p>
+            <ul class="bestaetigung-details" id="bestaetigung-details"></ul>
+            <div class="bestaetigung-aktionen">
+              <button type="button" class="text-button" id="rueckgaengig-button">Rückgängig</button>
+              <button type="button" class="text-button" id="zu-aufgaben-button">Zu den Aufgaben</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEU in Schritt 5: Was heute ansteht -->
+        <div class="karte tag-karte">
+          <h2 class="karten-titel">Dein Tag</h2>
+          <p class="naechster-termin" id="naechster-termin" hidden></p>
+          <p class="leer-text" id="heute-leer">Für heute ist nichts eingetragen.</p>
+          <ul class="aufgaben-liste" id="heute-liste"></ul>
+        </div>
+
+        <!-- NEU in Schritt 6: Fußball-Spiele mit Quoten -->
+        <div class="karte fussball-karte">
+          <div class="karten-kopf">
+            <h2 class="karten-titel">⚽ Fußball</h2>
+            <button type="button" class="text-button" id="quoten-aktualisieren" hidden>Aktualisieren</button>
+          </div>
+          <p class="leer-text" id="fussball-stand" hidden></p>
+
+          <!-- Einrichtung: API-Schlüssel eingeben -->
+          <div class="fussball-einrichtung" id="fussball-einrichtung" hidden>
+            <p>Die Quoten kommen vom kostenlosen Dienst <strong>The Odds API</strong> (500 Abrufe pro Monat). So richtest du ihn ein:</p>
+            <ol>
+              <li>Öffne <strong>the-odds-api.com</strong> und wähle den kostenlosen Plan „Starter“.</li>
+              <li>Du bekommst deinen persönlichen Schlüssel per E-Mail.</li>
+              <li>Füge ihn hier ein und tippe auf „Speichern“.</li>
+            </ol>
+            <div class="schluessel-zeile">
+              <input type="text" id="api-schluessel" placeholder="API-Schlüssel einfügen" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <button type="button" class="text-button" id="schluessel-speichern">Speichern</button>
+            </div>
+          </div>
+
+          <p class="fehler" id="fussball-fehler" hidden></p>
+
+          <!-- Interessante Quoten -->
+          <div class="tipps-bereich" id="tipps-bereich" hidden>
+            <h3 class="unter-titel">🔎 Interessante Quoten</h3>
+            <p class="erklaerung">Die beste Quote liegt mindestens 3 % über dem fairen Wert, den alle Buchmacher zusammen einschätzen.</p>
+            <ul class="tipp-liste" id="tipp-liste"></ul>
+            <p class="leer-text" id="tipps-leer" hidden>Gerade keine auffälligen Quoten – meistens liegen die Buchmacher eng beieinander.</p>
+          </div>
+
+          <!-- Spiele, nach Ligen sortiert -->
+          <div id="spiele-bereich"></div>
+
+          <!-- Einstellungen und Erklärung -->
+          <details class="fussball-details" id="fussball-einstellungen" hidden>
+            <summary>Einstellungen</summary>
+            <p class="erklaerung">Ligen – jede Liga mit Spielen kostet 1 Abruf pro Aktualisierung:</p>
+            <div class="liga-auswahl" id="liga-auswahl"></div>
+            <label class="schalter">
+              <input type="checkbox" id="nur-deutsche">
+              Beste Quote nur von deutschen Angeboten (Tipico DE, Winamax DE)
+            </label>
+            <button type="button" class="text-button" id="schluessel-aendern">API-Schlüssel ändern</button>
+          </details>
+
+          <details class="fussball-details">
+            <summary>Wie wird gerechnet?</summary>
+            <p class="erklaerung">Jede Quote enthält eine Gewinnspanne des Buchmachers. DayFlow rechnet sie bei jedem Anbieter heraus und bildet den Durchschnitt aller Anbieter – das ist die <strong>faire Wahrscheinlichkeit</strong> (die Prozentzahl unter jeder Quote). „Interessant“ ist eine Quote, wenn die beste Quote höher ist, als diese Wahrscheinlichkeit rechtfertigt. Das ist keine Garantie: Auch interessante Wetten gehen oft verloren, und Quoten ändern sich ständig.</p>
+          </details>
+
+          <p class="hinweis-klein">18+ · Wetten kann süchtig machen. Hilfe: check-dein-spiel.de · 0800 1 37 27 00 (kostenlos, anonym)</p>
+        </div>
+      </section>
+
+      <!-- Ansicht 2: Aufgaben (NEU in Schritt 2) -->
+      <section class="ansicht" id="ansicht-aufgaben" hidden>
+
+        <!-- Formular für eine neue Aufgabe -->
+        <form class="karte formular" id="aufgabe-formular" novalidate>
+          <h2>Neue Aufgabe</h2>
+
+          <label for="aufgabe-titel">Titel</label>
+          <!-- NEU in Schritt 3: Titelfeld mit Mikrofon-Button daneben -->
+          <div class="titel-zeile">
+            <input type="text" id="aufgabe-titel" maxlength="100" placeholder="z. B. Wocheneinkauf erledigen">
+            <button type="button" class="mikro-button" id="mikro-button" aria-label="Aufgabe einsprechen" title="Aufgabe einsprechen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                <path d="M5 11a7 7 0 0 0 14 0"></path>
+                <line x1="12" y1="18" x2="12" y2="21"></line>
+              </svg>
+            </button>
+          </div>
+          <p class="mikro-status" id="mikro-status" hidden></p>
+
+          <label for="aufgabe-beschreibung">Beschreibung <span class="optional">(optional)</span></label>
+          <textarea id="aufgabe-beschreibung" rows="2" maxlength="500" placeholder="Details, Notizen, Links …"></textarea>
+
+          <div class="formular-zeile">
+            <div>
+              <label for="aufgabe-faellig">Fällig am</label>
+              <input type="date" id="aufgabe-faellig">
+            </div>
+            <!-- NEU in Schritt 4: Uhrzeit für Termine -->
+            <div>
+              <label for="aufgabe-uhrzeit">Uhrzeit <span class="optional">(optional)</span></label>
+              <input type="time" id="aufgabe-uhrzeit">
+            </div>
+            <div>
+              <label for="aufgabe-prioritaet">Priorität</label>
+              <select id="aufgabe-prioritaet">
+                <option value="niedrig">Niedrig</option>
+                <option value="mittel" selected>Mittel</option>
+                <option value="hoch">Hoch</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Hier erscheinen Fehlermeldungen -->
+          <p class="fehler" id="aufgabe-fehler" hidden></p>
+
+          <button type="submit" class="haupt-button">Aufgabe hinzufügen</button>
+        </form>
+
+        <!-- Liste aller Aufgaben -->
+        <h2 class="abschnitt-titel">Deine Aufgaben <span id="aufgaben-anzahl"></span></h2>
+
+        <div class="karte leer-zustand" id="aufgaben-leer">
+          <p><strong>Noch keine Aufgaben.</strong></p>
+          <p>Leg oben deine erste Aufgabe an.</p>
+        </div>
+
+        <ul class="aufgaben-liste" id="aufgaben-liste"></ul>
+      </section>
+
+      <!-- Ansicht 3: Notizen (wird später gebaut) -->
+      <section class="ansicht" id="ansicht-notizen" hidden>
+        <div class="karte leer-zustand">
+          <h2>Notizen</h2>
+          <p>Hier kannst du bald kurze Gedanken und Ideen festhalten.</p>
+          <p class="hinweis">Diesen Bereich bauen wir in einem späteren Schritt.</p>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- NEU in Schritt 5: Meldungs-Leiste unten, z. B. "Gelöscht – Rückgängig" -->
+    <div class="meldung" id="meldung" role="status" hidden>
+      <span id="meldung-text"></span>
+      <button type="button" class="meldung-button" id="meldung-button" hidden></button>
+    </div>
+  </div>
+  <!-- ===== BIS HIER für CodePen kopieren ===== -->
+
+  <script src="script.js"></script>
+</body>
+</html>
